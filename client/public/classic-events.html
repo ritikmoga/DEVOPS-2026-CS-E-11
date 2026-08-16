@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventFlow | jQuery AJAX Demo</title>
+  <link rel="stylesheet" href="/classic-events.css" />
+</head>
+<body>
+  <main class="classic-shell">
+    <a href="/">← Back to React app</a>
+    <h1>jQuery + AJAX event list</h1>
+    <p>This HTML page uses jQuery's <code>$.ajax()</code> to load event data without a page refresh.</p>
+    <button id="reload-events" type="button">Reload events</button>
+    <p id="request-status" role="status">Ready to load events.</p>
+    <div id="event-list" class="event-list"></div>
+  </main>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="/classic-events.js"></script>
+</body>
+</html>
