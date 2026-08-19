@@ -1,0 +1,5 @@
+[
+  { "id": 1, "title": "Tech Innovation Summit", "date": "18 SEP 2026", "location": "Convention Hall", "description": "Talks and demos from builders shaping the future." },
+  { "id": 2, "title": "Creative Design Workshop", "date": "25 SEP 2026", "location": "Studio 4", "description": "A hands-on afternoon for designers and curious minds." },
+  { "id": 3, "title": "Community Music Night", "date": "02 OCT 2026", "location": "Riverside Stage", "description": "An open-air evening of local music and connection." }
+]
