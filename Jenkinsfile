@@ -63,35 +63,21 @@ pipeline {
                 archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true, fingerprint: true
 
                 def result = currentBuild.currentResult ?: 'FAILURE'
-                def githubStatus = result == 'SUCCESS' ? 'SUCCESS' : (result == 'UNSTABLE' ? 'ERROR' : 'FAILURE')
                 def report = fileExists('reports/frontend-test-report.md')
                     ? readFile('reports/frontend-test-report.md')
                     : 'Frontend report was not generated. Check the Jenkins console log.'
 
-                // GitHub commit status: visible on the commit and in pull requests.
-                try {
-                    githubNotify(
-                        context: 'Jenkins / frontend',
-                        description: "Frontend verification: ${result}",
-                        status: githubStatus,
-                        targetUrl: env.BUILD_URL
-                    )
-                } catch (err) {
-                    echo "GitHub status was not published: ${err}"
-                }
-
-                // Optional detailed GitHub Check. The commit status above still works
-                // when the Checks API plugin is not installed.
+                // Detailed GitHub Check, visible on the commit and in pull requests.
                 try {
                     publishChecks(
                         name: 'Frontend CI',
                         title: 'Jenkins frontend verification',
-                        summary: report.take(65000),
+                        summary: "Frontend verification: ${result}\n\n${report.take(65000)}",
                         text: report,
                         detailsURL: env.BUILD_URL
                     )
                 } catch (err) {
-                    echo "Detailed GitHub Check was not published: ${err}"
+                    echo "GitHub Check was not published: ${err}"
                 }
 
                 def recipient = params.REPORT_EMAIL?.trim()
