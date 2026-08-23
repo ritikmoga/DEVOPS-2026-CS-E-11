@@ -61,6 +61,21 @@ import AuditLogsPage from "./pages/AuditLogsPage";
 import SettingsRoutePage from "./pages/SettingsPage";
 
 const publicAppUrl = import.meta.env.VITE_PUBLIC_APP_URL || "http://localhost:5173";
+const DEMO_ADMIN_EMAIL = "demo.admin@eventhub.local";
+const DEMO_ADMIN_PASSWORD = "DemoAdmin123!";
+const DEMO_ADMIN_TOKEN = "demo-admin-session";
+const DEMO_ADMIN_PROFILE = {
+  fullName: "Demo Administrator",
+  email: DEMO_ADMIN_EMAIL,
+  roles: ["ADMIN"],
+};
+const DEMO_ADMIN_OVERVIEW = {
+  totalEvents: 12,
+  upcomingEvents: 7,
+  registrations: 248,
+  pendingProofs: 4,
+  todayCheckins: 36,
+};
 
 const nav = [
   { to: "/dashboard", label: "Overview", icon: <LayoutDashboard /> },
@@ -77,10 +92,14 @@ const nav = [
 ];
 function AdminShell() {
   const [mobile, setMobile] = useState(false);
-  const { data: me, isError: authError } = useQuery({
+  const token = localStorage.getItem("eventhub_admin_access");
+  const isDemo = token === DEMO_ADMIN_TOKEN;
+  const { data: fetchedMe, isError: authError } = useQuery({
     queryKey: ["admin-me"],
+    enabled: Boolean(token) && !isDemo,
     queryFn: () => api.get("/auth/me").then((r) => r.data.data),
   });
+  const me = isDemo ? DEMO_ADMIN_PROFILE : fetchedMe;
   const navigate = useNavigate();
   const logout = useMutation({
     mutationFn: () => api.post("/auth/logout"),
@@ -89,7 +108,7 @@ function AdminShell() {
       navigate("/login");
     },
   });
-  if (authError) {
+  if (authError && !isDemo) {
     localStorage.removeItem("eventhub_admin_access");
     return <Navigate to="/login" replace />;
   }
@@ -170,13 +189,21 @@ function NavItem({ item, onClick }: { item: any; onClick: () => void }) {
 }
 function AdminLogin() {
   const [form, setForm] = useState({
-    email: "ritikmoga13@gmail.com",
-    password: "Ritik1975",
+    email: DEMO_ADMIN_EMAIL,
+    password: DEMO_ADMIN_PASSWORD,
   });
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const mutation = useMutation({
-    mutationFn: () => api.post("/auth/login", form),
+    mutationFn: () => {
+      if (
+        form.email.trim().toLowerCase() === DEMO_ADMIN_EMAIL &&
+        form.password === DEMO_ADMIN_PASSWORD
+      ) {
+        return Promise.resolve({ data: { data: { accessToken: DEMO_ADMIN_TOKEN } } });
+      }
+      return api.post("/auth/login", form);
+    },
     onSuccess: (r) => {
       localStorage.setItem("eventhub_admin_access", r.data.data.accessToken);
       navigate("/dashboard");
@@ -195,7 +222,10 @@ function AdminLogin() {
         </div>
         <p className="kicker">SECURE ADMIN ACCESS</p>
         <h1>Good morning.</h1>
-        <p className="muted">Sign in to manage participation, proof and event operations.</p>
+        <p className="muted">
+          Sign in to manage participation, proof and event operations. Demo credentials are
+          prefilled for presentation.
+        </p>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -268,10 +298,14 @@ function StatCard({
   );
 }
 function Overview() {
-  const { data, isLoading } = useQuery({
+  const token = localStorage.getItem("eventhub_admin_access");
+  const isDemo = token === DEMO_ADMIN_TOKEN;
+  const { data: fetchedData, isLoading } = useQuery({
     queryKey: ["overview"],
+    enabled: !isDemo,
     queryFn: () => api.get("/admin/analytics/overview").then((r) => r.data.data),
   });
+  const data = isDemo ? DEMO_ADMIN_OVERVIEW : fetchedData;
   if (isLoading) return <PageLoading />;
   return (
     <div className="page-content">

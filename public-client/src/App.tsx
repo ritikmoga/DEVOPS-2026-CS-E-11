@@ -37,6 +37,38 @@ import RegisterPage from "./pages/RegisterPage";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import DashboardPage from "./pages/DashboardPage";
 
+const DEMO_PUBLIC_EMAIL = "demo.user@eventhub.local";
+const DEMO_PUBLIC_PASSWORD = "DemoUser123!";
+const DEMO_PUBLIC_TOKEN = "demo-public-session";
+const DEMO_PUBLIC_PROFILE = {
+  fullName: "Demo Student",
+  email: DEMO_PUBLIC_EMAIL,
+  roles: ["STUDENT"],
+};
+const DEMO_PUBLIC_REGISTRATIONS = {
+  pagination: { total: 2 },
+  data: [
+    {
+      id: "demo-registration-1",
+      status: "CONFIRMED",
+      event: {
+        title: "Campus Innovation Summit",
+        startAt: "2026-09-12T09:00:00.000Z",
+        venueName: "Main Auditorium",
+      },
+    },
+    {
+      id: "demo-registration-2",
+      status: "CONFIRMED",
+      event: {
+        title: "Design Thinking Workshop",
+        startAt: "2026-09-20T10:00:00.000Z",
+        venueName: "Innovation Lab",
+      },
+    },
+  ],
+};
+
 type EventRecord = {
   id: string;
   slug: string;
@@ -544,19 +576,27 @@ function Auth({ mode }: { mode: "login" | "register" }) {
   const { setSignedIn } = useAuth();
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    email: "",
-    password: "",
+    email: mode === "login" ? DEMO_PUBLIC_EMAIL : "",
+    password: mode === "login" ? DEMO_PUBLIC_PASSWORD : "",
     confirmPassword: "",
     fullName: "",
     department: "",
     enrollmentNumber: "",
   });
   const mutation = useMutation({
-    mutationFn: () =>
-      api.post(
+    mutationFn: () => {
+      if (
+        mode === "login" &&
+        form.email.trim().toLowerCase() === DEMO_PUBLIC_EMAIL &&
+        form.password === DEMO_PUBLIC_PASSWORD
+      ) {
+        return Promise.resolve({ data: { data: { accessToken: DEMO_PUBLIC_TOKEN } } });
+      }
+      return api.post(
         `/auth/${mode}`,
         mode === "login" ? { email: form.email, password: form.password } : form,
-      ),
+      );
+    },
     onSuccess: (r) => {
       if (mode === "login") {
         localStorage.setItem("eventhub_access", r.data.data.accessToken);
@@ -744,17 +784,20 @@ function Dashboard() {
   const { signOut, signingOut } = useAuth();
   const [sidebar, setSidebar] = useState(false);
   const token = localStorage.getItem("eventhub_access");
-  const { data: me, isError: meError } = useQuery({
+  const isDemo = token === DEMO_PUBLIC_TOKEN;
+  const { data: fetchedMe, isError: meError } = useQuery({
     queryKey: ["me"],
-    enabled: Boolean(token),
+    enabled: Boolean(token) && !isDemo,
     queryFn: () => api.get("/auth/me").then((r) => r.data.data),
   });
-  const { data: regs } = useQuery({
+  const { data: fetchedRegs } = useQuery({
     queryKey: ["my-registrations"],
-    enabled: Boolean(token),
+    enabled: Boolean(token) && !isDemo,
     queryFn: () => api.get("/registrations/me?limit=5").then((r) => r.data),
   });
-  if (!token || meError) return <Navigate to="/login" replace />;
+  const me = isDemo ? DEMO_PUBLIC_PROFILE : fetchedMe;
+  const regs = isDemo ? DEMO_PUBLIC_REGISTRATIONS : fetchedRegs;
+  if (!token || (!isDemo && meError)) return <Navigate to="/login" replace />;
   if (!me) return <div className="loading-screen">Loading your workspace…</div>;
   const links = [
     { id: "overview", label: "Overview", icon: <CalendarDays />, to: "/dashboard" },
