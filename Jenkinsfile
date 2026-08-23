@@ -94,17 +94,6 @@ pipeline {
                     echo 'No current-build JUnit report found; skipping test-result publication.'
                 }
 
-                if (fileExists('ci/generate-interactive-trend.mjs')) {
-                    withEnv(["BUILD_RESULT=${result}"]) {
-                        if (isUnix()) {
-                            sh 'node ci/generate-interactive-trend.mjs'
-                        } else {
-                            bat 'node ci/generate-interactive-trend.mjs'
-                        }
-                    }
-                } else {
-                    echo 'Interactive trend generator was not found in the checked-out workspace.'
-                }
                 archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true, fingerprint: true
 
                 def report = fileExists('reports/frontend-test-report.md')
