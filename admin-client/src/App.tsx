@@ -46,6 +46,19 @@ import {
 } from "recharts";
 import api from "./api/client";
 import EventAdminDetail from "./EventAdminDetail";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import DashboardOverviewPage from "./pages/DashboardOverviewPage";
+import EventManagementPage from "./pages/EventManagementPage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import RegistrationManagementPage from "./pages/RegistrationManagementPage";
+import AttendanceManagementPage from "./pages/AttendanceManagementPage";
+import ProofReviewPage from "./pages/ProofReviewPage";
+import CertificateManagementPage from "./pages/CertificateManagementPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import AnalyticsDashboardPage from "./pages/AnalyticsDashboardPage";
+import ReportsRoutePage from "./pages/ReportsPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
+import SettingsRoutePage from "./pages/SettingsPage";
 
 const publicAppUrl = import.meta.env.VITE_PUBLIC_APP_URL || "http://localhost:5173";
 
@@ -1232,22 +1245,37 @@ export default function App() {
   const token = localStorage.getItem("eventhub_admin_access");
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <AdminLogin />} />
+      <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <AdminLoginPage />} />
       <Route element={token ? <AdminShell /> : <Navigate to="/login" />}>
-        <Route path="/dashboard" element={<Overview />} />
-        <Route path="/dashboard/events" element={<EventsPage />} />
-        <Route path="/dashboard/events/:id" element={<EventAdminDetail />} />
-        <Route path="/dashboard/registrations" element={<RegistrationsPage />} />
-        <Route path="/dashboard/attendance" element={<AttendancePage />} />
-        <Route path="/dashboard/proof-review" element={<ProofPage />} />
-        <Route path="/dashboard/certificates" element={<CertificatesPage />} />
-        <Route path="/dashboard/users" element={<UsersPage />} />
-        <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
-        <Route path="/dashboard/reports" element={<ReportsPage />} />
-        <Route path="/dashboard/audit-logs" element={<AuditPage />} />
-        <Route path="/dashboard/settings" element={<SettingsPage />} />
+        <Route path="/dashboard" element={<DashboardOverviewPage />} />
+        <Route path="/dashboard/events" element={<EventManagementPage />} />
+        <Route path="/dashboard/events/:id" element={<EventDetailsPage />} />
+        <Route path="/dashboard/registrations" element={<RegistrationManagementPage />} />
+        <Route path="/dashboard/attendance" element={<AttendanceManagementPage />} />
+        <Route path="/dashboard/proof-review" element={<ProofReviewPage />} />
+        <Route path="/dashboard/certificates" element={<CertificateManagementPage />} />
+        <Route path="/dashboard/users" element={<UserManagementPage />} />
+        <Route path="/dashboard/analytics" element={<AnalyticsDashboardPage />} />
+        <Route path="/dashboard/reports" element={<ReportsRoutePage />} />
+        <Route path="/dashboard/audit-logs" element={<AuditLogsPage />} />
+        <Route path="/dashboard/settings" element={<SettingsRoutePage />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Route>
     </Routes>
   );
 }
+
+export {
+  AdminLogin as AdminLoginPageView,
+  Overview as DashboardOverviewPageView,
+  EventsPage as EventManagementPageView,
+  RegistrationsPage as RegistrationManagementPageView,
+  AttendancePage as AttendanceManagementPageView,
+  ProofPage as ProofReviewPageView,
+  CertificatesPage as CertificateManagementPageView,
+  UsersPage as UserManagementPageView,
+  AnalyticsPage as AnalyticsDashboardPageView,
+  ReportsPage as ReportsPageView,
+  AuditPage as AuditLogsPageView,
+  SettingsPage as SettingsPageView,
+};

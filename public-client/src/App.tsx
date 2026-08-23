@@ -29,6 +29,13 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { format } from "date-fns";
 import api from "./api/client";
+import HomePage from "./pages/HomePage";
+import EventsPage from "./pages/EventsPage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import VerifyCertificatePage from "./pages/VerifyCertificatePage";
+import DashboardPage from "./pages/DashboardPage";
 
 type EventRecord = {
   id: string;
@@ -1054,16 +1061,25 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Shell />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/events/:slug" element={<EventDetails />} />
-        <Route path="/verify-certificate" element={<VerifyCertificate />} />
-        <Route path="/login" element={<Auth mode="login" />} />
-        <Route path="/register" element={<Auth mode="register" />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/:section" element={<Dashboard />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:slug" element={<EventDetailsPage />} />
+        <Route path="/verify-certificate" element={<VerifyCertificatePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/:section" element={<DashboardPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   );
 }
+
+export {
+  Home as HomePageView,
+  Events as EventsPageView,
+  EventDetails as EventDetailsPageView,
+  Auth as AuthPageView,
+  VerifyCertificate as VerifyCertificatePageView,
+  Dashboard as DashboardPageView,
+};
