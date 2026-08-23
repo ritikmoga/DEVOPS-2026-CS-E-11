@@ -9,10 +9,10 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 
 ## Jenkins job
 
-1. Install these Jenkins plugins: Pipeline, GitHub Branch Source, GitHub, JUnit, Email Extension, and Checks API.
+1. Install these Jenkins plugins: Pipeline, GitHub Branch Source, GitHub, JUnit, and Email Extension.
 2. Create a Multibranch Pipeline for `https://github.com/ritikmoga/EVENT_MANAGEMENT_SYSTEM-MERN-STACK.git`.
 3. Enable discovery of the `main`, `RITIK_MERNSTACK`, `ROHAN_MERNSTACK`, and `Rohit-MERNSTACK` branches.
-4. Configure the GitHub credential/token for repository status and checks, then enable the GitHub webhook at `/github-webhook/`.
+4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Enable the GitHub webhook at `/github-webhook/`.
 5. Use an agent with Node.js/npm installed. Node.js 20 or newer is recommended.
 
 The pipeline parameter `REPORT_EMAIL` defaults to `ritikmoga13@gmail.com` and can be changed when starting a build.
