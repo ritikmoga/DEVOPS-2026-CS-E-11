@@ -87,14 +87,26 @@ pipeline {
     post {
         always {
             script {
+                def result = currentBuild.currentResult ?: 'FAILURE'
                 if (fileExists('reports/frontend-junit.xml')) {
                     junit testResults: 'reports/frontend-junit.xml', allowEmptyResults: false
                 } else {
                     echo 'No current-build JUnit report found; skipping test-result publication.'
                 }
+
+                if (fileExists('ci/generate-interactive-trend.mjs')) {
+                    withEnv(["BUILD_RESULT=${result}"]) {
+                        if (isUnix()) {
+                            sh 'node ci/generate-interactive-trend.mjs'
+                        } else {
+                            bat 'node ci/generate-interactive-trend.mjs'
+                        }
+                    }
+                } else {
+                    echo 'Interactive trend generator was not found in the checked-out workspace.'
+                }
                 archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true, fingerprint: true
 
-                def result = currentBuild.currentResult ?: 'FAILURE'
                 def report = fileExists('reports/frontend-test-report.md')
                     ? readFile('reports/frontend-test-report.md')
                     : 'Frontend report was not generated. Check the Jenkins console log.'
