@@ -16,6 +16,10 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     parameters {
         string(
             name: 'REPORT_EMAIL',

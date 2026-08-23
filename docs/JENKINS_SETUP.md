@@ -17,6 +17,8 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 
 The pipeline parameter `REPORT_EMAIL` defaults to `ritikmoga13@gmail.com` and can be changed when starting a build.
 
+The job polls the GitHub `main` branch every five minutes (`H/5 * * * *`). When a new commit is detected, Jenkins automatically runs the frontend checks. Instant GitHub webhooks require a public Jenkins URL; a `localhost` or LAN-only URL cannot receive requests from GitHub.
+
 ## Gmail notifications
 
 Configure SMTP globally in Jenkins; do not commit an SMTP password:
