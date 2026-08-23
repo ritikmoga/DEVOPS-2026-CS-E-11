@@ -11,10 +11,6 @@ def runInDirectory(String directory, String command) {
 pipeline {
     agent any
 
-    environment {
-        CHECKOUT_SUCCEEDED = 'false'
-    }
-
     options {
         timestamps()
         skipDefaultCheckout(true)
@@ -41,6 +37,11 @@ pipeline {
                 dir('reports') {
                     deleteDir()
                 }
+                if (isUnix()) {
+                    sh 'rm -f .jenkins-checkout-complete'
+                } else {
+                    bat 'if exist .jenkins-checkout-complete del /q .jenkins-checkout-complete'
+                }
             }
         }
 
@@ -50,7 +51,11 @@ pipeline {
                     checkout scm
                 }
                 script {
-                    env.CHECKOUT_SUCCEEDED = 'true'
+                    def checkedOutCommit = isUnix()
+                        ? sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                        : bat(returnStdout: true, script: '@git rev-parse HEAD').trim()
+                    env.GIT_COMMIT = checkedOutCommit
+                    writeFile file: '.jenkins-checkout-complete', text: checkedOutCommit
                 }
             }
         }
@@ -94,16 +99,12 @@ pipeline {
                     ? readFile('reports/frontend-test-report.md')
                     : 'Frontend report was not generated. Check the Jenkins console log.'
 
-                def commit = env.GIT_COMMIT
-                if (!commit && fileExists('.git')) {
-                    commit = isUnix()
-                        ? sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                        : bat(returnStdout: true, script: '@git rev-parse HEAD').trim()
-                }
+                def checkoutComplete = fileExists('.jenkins-checkout-complete')
+                def commit = checkoutComplete ? readFile('.jenkins-checkout-complete').trim() : null
 
                 // Publish a GitHub commit status only after this build checked out a commit.
                 // This prevents a failed fetch from updating a stale workspace commit.
-                if (env.CHECKOUT_SUCCEEDED == 'true' && commit) {
+                if (checkoutComplete && commit) {
                     try {
                     def githubState = result == 'SUCCESS' ? 'success' : 'failure'
                     withCredentials([
