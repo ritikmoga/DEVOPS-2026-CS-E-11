@@ -37,10 +37,12 @@ pipeline {
                 dir('reports') {
                     deleteDir()
                 }
-                if (isUnix()) {
-                    sh 'rm -f .jenkins-checkout-complete'
-                } else {
-                    bat 'if exist .jenkins-checkout-complete del /q .jenkins-checkout-complete'
+                script {
+                    if (isUnix()) {
+                        sh 'rm -f .jenkins-checkout-complete'
+                    } else {
+                        bat 'if exist .jenkins-checkout-complete del /q .jenkins-checkout-complete'
+                    }
                 }
             }
         }
