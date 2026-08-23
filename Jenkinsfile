@@ -67,17 +67,50 @@ pipeline {
                     ? readFile('reports/frontend-test-report.md')
                     : 'Frontend report was not generated. Check the Jenkins console log.'
 
-                // Detailed GitHub Check, visible on the commit and in pull requests.
+                def commit = env.GIT_COMMIT
+                if (!commit && fileExists('.git')) {
+                    commit = isUnix()
+                        ? sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                        : bat(returnStdout: true, script: '@git rev-parse HEAD').trim()
+                }
+
+                // Publish a GitHub commit status, visible on the commit and in pull requests.
                 try {
-                    publishChecks(
-                        name: 'Frontend CI',
-                        title: 'Jenkins frontend verification',
-                        summary: "Frontend verification: ${result}\n\n${report.take(65000)}",
-                        text: report,
-                        detailsURL: env.BUILD_URL
-                    )
+                    def githubState = result == 'SUCCESS' ? 'success' : 'failure'
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'github-auth',
+                            usernameVariable: 'GITHUB_USERNAME',
+                            passwordVariable: 'GITHUB_TOKEN'
+                        )
+                    ]) {
+                        def statusCode = powershell(returnStatus: true, script: """
+                            \$headers = @{
+                                Authorization = \"Bearer \$env:GITHUB_TOKEN\"
+                                Accept = 'application/vnd.github+json'
+                                'X-GitHub-Api-Version' = '2022-11-28'
+                            }
+                            \$payload = @{
+                                state = '${githubState}'
+                                target_url = '${env.BUILD_URL}'
+                                description = 'Frontend verification: ${result}'
+                                context = 'jenkins/frontend'
+                            } | ConvertTo-Json
+                            try {
+                                Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/EVENT_MANAGEMENT_SYSTEM-MERN-STACK/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
+                                Write-Host 'GitHub commit status published.'
+                                exit 0
+                            } catch {
+                                Write-Error \$_.Exception.Message
+                                exit 1
+                            }
+                        """)
+                        if (statusCode != 0) {
+                            echo 'GitHub commit status could not be published.'
+                        }
+                    }
                 } catch (err) {
-                    echo "GitHub Check was not published: ${err}"
+                    echo "GitHub status was not published: ${err}"
                 }
 
                 def recipient = params.REPORT_EMAIL?.trim()
