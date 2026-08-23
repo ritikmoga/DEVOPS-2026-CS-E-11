@@ -3,6 +3,12 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $logDirectory = Join-Path $projectRoot 'logs'
 New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+$launcherLogPath = Join-Path $logDirectory 'launcher.log'
+
+function Write-LauncherLog {
+    param([string]$Message)
+    Add-Content -LiteralPath $launcherLogPath -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Message"
+}
 
 $npmCommand = (Get-Command npm.cmd -ErrorAction Stop).Source
 
@@ -20,6 +26,7 @@ function Start-Frontend {
 
     if (Test-PortListening -Port $Port) {
         Write-Output "$Name is already running on http://localhost:$Port"
+        Write-LauncherLog "$Name already running on port $Port"
         return
     }
 
@@ -36,6 +43,7 @@ function Start-Frontend {
         -RedirectStandardError $errorLogPath | Out-Null
 
     Write-Output "Starting $Name on http://localhost:$Port"
+    Write-LauncherLog "Started $Name on port $Port"
 }
 
 Start-Frontend -Name 'public-client' -Directory 'public-client' -Port 5173
@@ -52,6 +60,7 @@ do {
 } while ((Get-Date) -lt $deadline)
 
 if (-not (Test-PortListening -Port 5173) -or -not (Test-PortListening -Port 5174)) {
+    Write-LauncherLog 'Frontend startup failed; check individual client logs.'
     Write-Error "One or both frontends did not start. Check logs in $logDirectory"
     exit 1
 }
@@ -59,3 +68,6 @@ if (-not (Test-PortListening -Port 5173) -or -not (Test-PortListening -Port 5174
 Write-Output 'Both frontends are ready:'
 Write-Output 'Public: http://localhost:5173'
 Write-Output 'Admin:  http://localhost:5174'
+Start-Process 'http://localhost:5173'
+Start-Process 'http://localhost:5174'
+Write-LauncherLog 'Opened public and admin URLs in the default browser.'
