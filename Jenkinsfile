@@ -30,6 +30,16 @@ pipeline {
     }
 
     stages {
+        stage('Prepare reports') {
+            steps {
+                // Remove reports from an older workspace before checkout/test execution.
+                // This prevents a failed checkout from being shown with stale test results.
+                dir('reports') {
+                    deleteDir()
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -63,7 +73,11 @@ pipeline {
     post {
         always {
             script {
-                junit testResults: 'reports/frontend-junit.xml', allowEmptyResults: true
+                if (fileExists('reports/frontend-junit.xml')) {
+                    junit testResults: 'reports/frontend-junit.xml', allowEmptyResults: false
+                } else {
+                    echo 'No current-build JUnit report found; skipping test-result publication.'
+                }
                 archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true, fingerprint: true
 
                 def result = currentBuild.currentResult ?: 'FAILURE'
