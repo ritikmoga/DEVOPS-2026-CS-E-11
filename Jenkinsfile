@@ -11,6 +11,10 @@ def runInDirectory(String directory, String command) {
 pipeline {
     agent any
 
+    environment {
+        CHECKOUT_SUCCEEDED = 'false'
+    }
+
     options {
         timestamps()
         skipDefaultCheckout(true)
@@ -42,7 +46,12 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                retry(3) {
+                    checkout scm
+                }
+                script {
+                    env.CHECKOUT_SUCCEEDED = 'true'
+                }
             }
         }
 
@@ -92,8 +101,10 @@ pipeline {
                         : bat(returnStdout: true, script: '@git rev-parse HEAD').trim()
                 }
 
-                // Publish a GitHub commit status, visible on the commit and in pull requests.
-                try {
+                // Publish a GitHub commit status only after this build checked out a commit.
+                // This prevents a failed fetch from updating a stale workspace commit.
+                if (env.CHECKOUT_SUCCEEDED == 'true' && commit) {
+                    try {
                     def githubState = result == 'SUCCESS' ? 'success' : 'failure'
                     withCredentials([
                         usernamePassword(
@@ -127,8 +138,11 @@ pipeline {
                             echo 'GitHub commit status could not be published.'
                         }
                     }
-                } catch (err) {
-                    echo "GitHub status was not published: ${err}"
+                    } catch (err) {
+                        echo "GitHub status was not published: ${err}"
+                    }
+                } else {
+                    echo 'Skipping GitHub status because checkout did not complete.'
                 }
 
                 def recipient = params.REPORT_EMAIL?.trim()
