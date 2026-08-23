@@ -46,8 +46,8 @@ function Start-Frontend {
     Write-LauncherLog "Started $Name on port $Port"
 }
 
-Start-Frontend -Name 'public-client' -Directory 'public-client' -Port 5173
-Start-Frontend -Name 'admin-client' -Directory 'admin-client' -Port 5174
+Start-Frontend -Name 'public-client' -Directory 'frontend-demo/public-client' -Port 5173
+Start-Frontend -Name 'admin-client' -Directory 'frontend-demo/admin-client' -Port 5174
 
 $deadline = (Get-Date).AddSeconds(30)
 do {

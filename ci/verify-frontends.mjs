@@ -6,10 +6,10 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const checks = [
-  { name: 'Public frontend typecheck', directory: 'public-client', command: 'typecheck' },
-  { name: 'Public frontend production build', directory: 'public-client', command: 'build' },
-  { name: 'Admin frontend typecheck', directory: 'admin-client', command: 'typecheck' },
-  { name: 'Admin frontend production build', directory: 'admin-client', command: 'build' },
+  { name: 'Public frontend typecheck', directory: 'frontend-demo/public-client', command: 'typecheck' },
+  { name: 'Public frontend production build', directory: 'frontend-demo/public-client', command: 'build' },
+  { name: 'Admin frontend typecheck', directory: 'frontend-demo/admin-client', command: 'typecheck' },
+  { name: 'Admin frontend production build', directory: 'frontend-demo/admin-client', command: 'build' },
 ];
 
 const results = checks.map((check) => {

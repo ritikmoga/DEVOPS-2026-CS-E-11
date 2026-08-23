@@ -65,8 +65,8 @@ pipeline {
         stage('Install frontend dependencies') {
             steps {
                 script {
-                    runInDirectory('public-client', 'npm install --no-audit --no-fund --no-package-lock')
-                    runInDirectory('admin-client', 'npm install --no-audit --no-fund --no-package-lock')
+                    runInDirectory('frontend-demo/public-client', 'npm install --no-audit --no-fund --no-package-lock')
+                    runInDirectory('frontend-demo/admin-client', 'npm install --no-audit --no-fund --no-package-lock')
                 }
             }
         }

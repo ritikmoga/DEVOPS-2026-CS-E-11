@@ -2,8 +2,8 @@
 
 The root `Jenkinsfile` runs these checks for both frontends:
 
-- `public-client`: typecheck and production build
-- `admin-client`: typecheck and production build
+- `frontend-demo/public-client`: typecheck and production build
+- `frontend-demo/admin-client`: typecheck and production build
 
 It creates a JUnit XML report and a Markdown report. Jenkins archives the reports and publishes a detailed GitHub Check when the Checks API plugin is installed.
 
