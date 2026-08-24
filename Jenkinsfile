@@ -227,10 +227,19 @@ pipeline {
                 def recipient = params.REPORT_EMAIL?.trim()
                 if (!reportOnlyCommit && recipient) {
                     try {
+                        def emailBody = """Frontend test report
+
+${report}
+
+Jenkins build: ${env.BUILD_URL}
+
+The Markdown and JUnit report files are attached to this email as well.
+"""
                         emailext(
                             to: recipient,
                             subject: "${env.JOB_NAME} #${env.BUILD_NUMBER}: frontend ${result}",
-                            body: "${report}\n\nJenkins build: ${env.BUILD_URL}",
+                            body: emailBody,
+                            mimeType: 'text/plain',
                             attachmentsPattern: 'reports/frontend-test-report.md,reports/frontend-junit.xml'
                         )
                     } catch (err) {
