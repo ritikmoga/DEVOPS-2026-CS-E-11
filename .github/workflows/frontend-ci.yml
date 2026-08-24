@@ -1,0 +1,42 @@
+name: Frontend CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-frontends:
+    name: Verify frontends
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install public frontend dependencies
+        working-directory: frontend-demo/public-client
+        run: npm install --no-audit --no-fund --no-package-lock
+
+      - name: Install admin frontend dependencies
+        working-directory: frontend-demo/admin-client
+        run: npm install --no-audit --no-fund --no-package-lock
+
+      - name: Run frontend checks
+        run: node ci/verify-frontends.mjs
+
+      - name: Upload frontend reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-reports
+          path: reports/
+          if-no-files-found: ignore
