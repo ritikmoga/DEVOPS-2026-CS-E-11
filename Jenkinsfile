@@ -133,7 +133,7 @@ pipeline {
                                 context = 'jenkins/frontend'
                             } | ConvertTo-Json
                             try {
-                                Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/EVENT_MANAGEMENT_SYSTEM-MERN-STACK/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
+                                Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/DEVOPS-2026-CS-E-11/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
                                 Write-Host 'GitHub commit status published.'
                                 exit 0
                             } catch {
