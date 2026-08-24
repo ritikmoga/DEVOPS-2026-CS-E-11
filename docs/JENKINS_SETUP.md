@@ -15,7 +15,7 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Configure the GitHub repository webhook to send push events to `https://YOUR_JENKINS_URL/github-webhook/` with JSON delivery and enable the job's GitHub hook trigger.
 5. Use an agent with Node.js/npm installed. Node.js 20 or newer is recommended.
 
-The pipeline parameter `REPORT_EMAIL` defaults to `ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the checked-out branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop.
+The pipeline parameter `REPORT_EMAIL` defaults to `sumit.kumar@skit.ac.in, ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the GitHub `main` branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop.
 
 The `github-auth` credential must also allow repository contents write access because Jenkins publishes the generated reports back to GitHub. Commit-status permission is still required for the Jenkins status update.
 

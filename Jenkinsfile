@@ -26,9 +26,9 @@ pipeline {
     parameters {
         string(
             name: 'REPORT_EMAIL',
-            defaultValue: 'ritikmoga13@gmail.com',
+            defaultValue: 'sumit.kumar@skit.ac.in, ritikmoga13@gmail.com',
             trim: true,
-            description: 'Gmail address that receives the Jenkins frontend report'
+            description: 'Comma-separated recipients for the Jenkins frontend report'
         )
     }
 
@@ -123,7 +123,7 @@ pipeline {
                                     passwordVariable: 'GITHUB_TOKEN'
                                 )
                             ]) {
-                                def reportBranch = env.BRANCH_NAME ?: 'main'
+                                def reportBranch = 'main'
                                 if (isUnix()) {
                                     sh """
                                         set +x
