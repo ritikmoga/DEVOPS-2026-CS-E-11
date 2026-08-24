@@ -1,14 +1,14 @@
 # Frontend CI report
 
-- Commit: 773e9564117d9a313f8c685c92dabd00d6f597f8
+- Commit: 4340b5a831775c49dc2feb545452c00da82d7d00
 - Result: **PASSED**
 
 | Check | Result | Duration |
 | --- | --- | ---: |
-| Public frontend typecheck | ✅ Passed | 2.05s |
-| Public frontend production build | ✅ Passed | 4.73s |
-| Admin frontend typecheck | ✅ Passed | 1.96s |
-| Admin frontend production build | ✅ Passed | 5.68s |
+| Public frontend typecheck | ✅ Passed | 2.01s |
+| Public frontend production build | ✅ Passed | 5.15s |
+| Admin frontend typecheck | ✅ Passed | 2.08s |
+| Admin frontend production build | ✅ Passed | 5.54s |
 
 ## Output
 
@@ -33,7 +33,7 @@ computing gzip size...
 dist/index.html                   0.50 kB │ gzip:   0.32 kB
 dist/assets/index-CTLYDvRE.css   17.75 kB │ gzip:   4.66 kB
 dist/assets/index-BkWEpIEy.js   396.01 kB │ gzip: 125.96 kB
-✓ built in 2.44s
+✓ built in 2.66s
 ```
 
 ### Admin frontend typecheck
@@ -57,7 +57,7 @@ computing gzip size...
 dist/index.html                   0.41 kB │ gzip:   0.28 kB
 dist/assets/index-DuGlApkD.css   15.82 kB │ gzip:   4.19 kB
 dist/assets/index-wzZ-yvw9.js   783.03 kB │ gzip: 229.99 kB
-✓ built in 3.52s
+✓ built in 3.29s
 
 
 (!) Some chunks are larger than 500 kB after minification. Consider:

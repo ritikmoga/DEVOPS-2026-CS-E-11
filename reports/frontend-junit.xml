@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Frontend CI" tests="4" failures="0" time="14.423">
-  <testcase classname="frontend-demo/public-client" name="Public frontend typecheck" time="2.052"><system-out><![CDATA[> @event-platform/public-client@1.0.0 typecheck
+<testsuite name="Frontend CI" tests="4" failures="0" time="14.776">
+  <testcase classname="frontend-demo/public-client" name="Public frontend typecheck" time="2.009"><system-out><![CDATA[> @event-platform/public-client@1.0.0 typecheck
 > tsc --noEmit]]></system-out></testcase>
-  <testcase classname="frontend-demo/public-client" name="Public frontend production build" time="4.733"><system-out><![CDATA[> @event-platform/public-client@1.0.0 build
+  <testcase classname="frontend-demo/public-client" name="Public frontend production build" time="5.148"><system-out><![CDATA[> @event-platform/public-client@1.0.0 build
 > tsc -b && vite build
 
 vite v6.4.3 building for production...
@@ -13,10 +13,10 @@ computing gzip size...
 dist/index.html                   0.50 kB │ gzip:   0.32 kB
 dist/assets/index-CTLYDvRE.css   17.75 kB │ gzip:   4.66 kB
 dist/assets/index-BkWEpIEy.js   396.01 kB │ gzip: 125.96 kB
-✓ built in 2.44s]]></system-out></testcase>
-  <testcase classname="frontend-demo/admin-client" name="Admin frontend typecheck" time="1.958"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 typecheck
+✓ built in 2.66s]]></system-out></testcase>
+  <testcase classname="frontend-demo/admin-client" name="Admin frontend typecheck" time="2.082"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 typecheck
 > tsc --noEmit]]></system-out></testcase>
-  <testcase classname="frontend-demo/admin-client" name="Admin frontend production build" time="5.680"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 build
+  <testcase classname="frontend-demo/admin-client" name="Admin frontend production build" time="5.537"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 build
 > tsc -b && vite build
 
 vite v6.4.3 building for production...
@@ -27,7 +27,7 @@ computing gzip size...
 dist/index.html                   0.41 kB │ gzip:   0.28 kB
 dist/assets/index-DuGlApkD.css   15.82 kB │ gzip:   4.19 kB
 dist/assets/index-wzZ-yvw9.js   783.03 kB │ gzip: 229.99 kB
-✓ built in 3.52s
+✓ built in 3.29s
 
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
