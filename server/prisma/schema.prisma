@@ -1,0 +1,542 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  STUDENT
+  USER
+  CHECKIN_STAFF
+  EVENT_COORDINATOR
+  FACULTY
+  ORGANIZER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum EventMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum RegistrationType {
+  INDIVIDUAL
+  TEAM
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_CLOSED
+  ONGOING
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  WAITLISTED
+  REJECTED
+  CANCELLED
+  CHECKED_IN
+  CHECKED_OUT
+  COMPLETED
+}
+
+enum TicketStatus {
+  ACTIVE
+  REVOKED
+  USED
+}
+
+enum AttendanceStatus {
+  NOT_MARKED
+  CHECKED_IN
+  CHECKED_OUT
+  PRESENT
+  INCOMPLETE
+  ABSENT
+  MANUAL_OVERRIDE
+}
+
+enum CheckInMethod {
+  QR
+  MANUAL
+}
+
+enum TeamStatus {
+  FORMING
+  CONFIRMED
+  CANCELLED
+}
+
+enum TeamMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum ProofType {
+  ATTENDANCE_PHOTO
+  CERTIFICATE
+  EVENT_TICKET
+  RESULT_SHEET
+  ORGANIZER_LETTER
+  OTHER
+}
+
+enum ProofStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  FLAGGED
+  DUPLICATE
+}
+
+enum CertificateStatus {
+  ISSUED
+  REVOKED
+}
+
+enum NotificationType {
+  REGISTRATION_CONFIRMED
+  REGISTRATION_REJECTED
+  WAITLIST_PROMOTED
+  PROOF_FLAGGED
+  EVENT_REMINDER
+  EVENT_CANCELLED
+  EVENT_RESCHEDULED
+  CERTIFICATE_AVAILABLE
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum FileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model User {
+  id                   String                  @id @default(uuid()) @map("_id")
+  email                String                  @unique
+  passwordHash         String
+  fullName             String
+  phone                String?
+  college              String?
+  department           String?
+  semester             Int?
+  year                 Int?
+  enrollmentNumber     String?
+  emailVerifiedAt      DateTime?
+  isActive             Boolean                 @default(true)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  deletedAt            DateTime?
+  roles                UserRole[]
+  sessions             Session[]
+  authTokens           AuthToken[]
+  createdEvents        Event[]                 @relation("EventCreatedBy")
+  registrations        Registration[]          @relation("UserRegistrations")
+  proofs               Proof[]
+  certificates         Certificate[]
+  notificationReceipts NotificationRecipient[]
+  auditLogs            AuditLog[]
+  verifiedAttendance   Attendance[]            @relation("AttendanceVerifiedBy")
+  uploadedFiles        FileRecord[]            @relation("FileUploadedBy")
+  uploadedDocuments    EventDocument[]
+  teamMemberships      TeamMember[]
+  attendanceRecords    Attendance[]            @relation("AttendanceParticipant")
+
+  @@index([enrollmentNumber])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @map("_id")
+  name        RoleName         @unique
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @map("_id")
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  id     String @id @default(uuid()) @map("_id")
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @map("_id")
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Session {
+  id               String    @id @default(uuid()) @map("_id")
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model AuthToken {
+  id        String        @id @default(uuid()) @map("_id")
+  userId    String
+  tokenHash String        @unique
+  type      AuthTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+  @@index([expiresAt])
+}
+
+model EventCategory {
+  id          String  @id @default(uuid()) @map("_id")
+  name        String  @unique
+  description String?
+  events      Event[]
+}
+
+model Organizer {
+  id           String   @id @default(uuid()) @map("_id")
+  name         String
+  contactEmail String?
+  contactPhone String?
+  description  String?
+  events       Event[]
+  createdAt    DateTime @default(now())
+}
+
+model Event {
+  id                          String           @id @default(uuid()) @map("_id")
+  title                       String
+  slug                        String           @unique
+  shortDescription            String
+  description                 String
+  categoryId                  String?
+  organizerId                 String?
+  mode                        EventMode        @default(OFFLINE)
+  bannerUrl                   String?
+  bannerStorageKey            String?
+  venueName                   String?
+  venueAddress                String?
+  city                        String?
+  state                       String?
+  latitude                    Float?
+  longitude                   Float?
+  allowedRadiusMeters         Int?
+  startAt                     DateTime
+  endAt                       DateTime
+  registrationStartAt         DateTime
+  registrationEndAt           DateTime
+  capacity                    Int
+  confirmedCount              Int              @default(0)
+  registrationType            RegistrationType @default(INDIVIDUAL)
+  approvalRequired            Boolean          @default(false)
+  waitlistEnabled             Boolean          @default(true)
+  minTeamSize                 Int?
+  maxTeamSize                 Int?
+  attendanceEnabled           Boolean          @default(true)
+  minimumAttendancePercentage Float            @default(75)
+  certificateEnabled          Boolean          @default(true)
+  rules                       Json?
+  schedule                    Json?
+  speakers                    Json?
+  prizes                      Json?
+  contactDetails              Json?
+  tags                        String[]
+  status                      EventStatus      @default(DRAFT)
+  createdById                 String
+  publishedAt                 DateTime?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+  deletedAt                   DateTime?
+  category                    EventCategory?   @relation(fields: [categoryId], references: [id])
+  organizer                   Organizer?       @relation(fields: [organizerId], references: [id])
+  createdBy                   User             @relation("EventCreatedBy", fields: [createdById], references: [id])
+  documents                   EventDocument[]
+  registrations               Registration[]
+  teams                       Team[]
+  attendances                 Attendance[]
+  proofs                      Proof[]
+  certificates                Certificate[]
+
+  @@index([status, startAt])
+  @@index([categoryId])
+  @@index([organizerId])
+  @@index([registrationStartAt, registrationEndAt])
+}
+
+model EventDocument {
+  id           String   @id @default(uuid()) @map("_id")
+  eventId      String
+  name         String
+  storageKey   String
+  url          String
+  mimeType     String
+  fileSize     Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+  event        Event    @relation(fields: [eventId], references: [id])
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([eventId])
+}
+
+model Registration {
+  id                 String               @id @default(uuid()) @map("_id")
+  eventId            String
+  userId             String
+  registrationNumber String               @unique
+  status             RegistrationStatus   @default(PENDING)
+  customFormAnswers  Json?
+  registeredAt       DateTime             @default(now())
+  confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  event              Event                @relation(fields: [eventId], references: [id])
+  user               User                 @relation("UserRegistrations", fields: [userId], references: [id])
+  answers            RegistrationAnswer[]
+  ticket             Ticket?
+  attendance         Attendance?
+  certificates       Certificate[]
+
+  @@unique([eventId, userId])
+  @@index([eventId, status])
+  @@index([userId, status])
+}
+
+model RegistrationAnswer {
+  id             String       @id @default(uuid()) @map("_id")
+  registrationId String
+  fieldKey       String
+  value          Json
+  registration   Registration @relation(fields: [registrationId], references: [id])
+
+  @@unique([registrationId, fieldKey])
+}
+
+model Team {
+  id         String       @id @default(uuid()) @map("_id")
+  eventId    String
+  name       String
+  leaderId   String
+  inviteCode String       @unique
+  status     TeamStatus   @default(FORMING)
+  createdAt  DateTime     @default(now())
+  event      Event        @relation(fields: [eventId], references: [id])
+  members    TeamMember[]
+
+  @@index([eventId, status])
+}
+
+model TeamMember {
+  id       String         @id @default(uuid()) @map("_id")
+  teamId   String
+  userId   String
+  role     TeamMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+  team     Team           @relation(fields: [teamId], references: [id])
+  user     User           @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model Ticket {
+  id             String       @id @default(uuid()) @map("_id")
+  registrationId String       @unique
+  tokenHash      String       @unique
+  nonce          String       @unique
+  issuedAt       DateTime     @default(now())
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  status         TicketStatus @default(ACTIVE)
+  registration   Registration @relation(fields: [registrationId], references: [id])
+}
+
+model Attendance {
+  id                   String           @id @default(uuid()) @map("_id")
+  eventId              String
+  registrationId       String           @unique
+  userId               String
+  checkInAt            DateTime?
+  checkOutAt           DateTime?
+  attendanceMinutes    Int?
+  attendancePercentage Float?
+  status               AttendanceStatus @default(NOT_MARKED)
+  checkInMethod        CheckInMethod?
+  checkOutMethod       CheckInMethod?
+  verifiedById         String?
+  overrideReason       String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  event                Event            @relation(fields: [eventId], references: [id])
+  registration         Registration     @relation(fields: [registrationId], references: [id])
+  user                 User             @relation("AttendanceParticipant", fields: [userId], references: [id])
+  verifiedBy           User?            @relation("AttendanceVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([eventId, status])
+  @@index([userId])
+}
+
+model Proof {
+  id                   String      @id @default(uuid()) @map("_id")
+  userId               String
+  eventId              String
+  type                 ProofType
+  storageKey           String
+  url                  String
+  originalFileName     String
+  mimeType             String
+  fileSize             Int
+  checksum             String
+  uploadedAt           DateTime    @default(now())
+  verificationStatus   ProofStatus @default(PENDING)
+  verificationScore    Float?
+  verificationMetadata Json?
+  reviewedById         String?
+  reviewedAt           DateTime?
+  user                 User        @relation(fields: [userId], references: [id])
+  event                Event       @relation(fields: [eventId], references: [id])
+
+  @@index([eventId, verificationStatus])
+  @@index([checksum])
+}
+
+model Certificate {
+  id                String            @id @default(uuid()) @map("_id")
+  certificateNumber String            @unique
+  eventId           String
+  userId            String
+  registrationId    String?
+  storageKey        String
+  certificateUrl    String
+  verificationToken String            @unique
+  issuedAt          DateTime          @default(now())
+  revokedAt         DateTime?
+  status            CertificateStatus @default(ISSUED)
+  event             Event             @relation(fields: [eventId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
+  registration      Registration?     @relation(fields: [registrationId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model Notification {
+  id         String                  @id @default(uuid()) @map("_id")
+  type       NotificationType
+  title      String
+  message    String
+  channel    NotificationChannel     @default(IN_APP)
+  eventId    String?
+  createdAt  DateTime                @default(now())
+  recipients NotificationRecipient[]
+
+  @@index([createdAt])
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid()) @map("_id")
+  notificationId String
+  userId         String
+  readAt         DateTime?
+  deliveredAt    DateTime?
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @map("_id")
+  actorId      String?
+  action       String
+  resourceType String
+  resourceId   String?
+  oldValue     Json?
+  newValue     Json?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  actor        User?    @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+  @@index([actorId])
+}
+
+model FileRecord {
+  id           String         @id @default(uuid()) @map("_id")
+  objectKey    String         @unique
+  url          String
+  originalName String
+  mimeType     String
+  fileSize     Int
+  checksum     String
+  visibility   FileVisibility @default(PRIVATE)
+  uploadedById String
+  uploadedAt   DateTime       @default(now())
+  uploadedBy   User           @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([checksum])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid()) @map("_id")
+  key         String   @unique
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model SequenceCounter {
+  id        String   @id @default(uuid()) @map("_id")
+  key       String   @unique
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}

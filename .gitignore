@@ -1,0 +1,7 @@
+# Runtime and generated data
+logs/
+
+# Local secrets and dependencies
+server/.env
+server/node_modules/
+node_modules/
