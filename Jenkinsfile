@@ -17,6 +17,9 @@ pipeline {
     }
 
     triggers {
+        // Start immediately when the GitHub webhook reaches Jenkins.
+        // Keep polling as a fallback when Jenkins/GitHub cannot deliver the webhook.
+        githubPush()
         pollSCM('H/1 * * * *')
     }
 

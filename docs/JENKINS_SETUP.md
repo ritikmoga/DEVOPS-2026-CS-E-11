@@ -10,14 +10,14 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 ## Jenkins job
 
 1. Install these Jenkins plugins: Pipeline, GitHub Branch Source, GitHub, JUnit, and Email Extension.
-2. Create a Multibranch Pipeline for `https://github.com/ritikmoga/EVENT_MANAGEMENT_SYSTEM-MERN-STACK.git`.
+2. Create a Multibranch Pipeline for `https://github.com/ritikmoga/DEVOPS-2026-CS-E-11.git`.
 3. Enable discovery of the `main`, `RITIK_MERNSTACK`, `ROHAN_MERNSTACK`, and `Rohit-MERNSTACK` branches.
-4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Enable the GitHub webhook at `/github-webhook/`.
+4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Configure the GitHub repository webhook to send push events to `https://YOUR_JENKINS_URL/github-webhook/` with JSON delivery and enable the job's GitHub hook trigger.
 5. Use an agent with Node.js/npm installed. Node.js 20 or newer is recommended.
 
 The pipeline parameter `REPORT_EMAIL` defaults to `ritikmoga13@gmail.com` and can be changed when starting a build.
 
-The job polls the GitHub `main` branch every minute (`H/1 * * * *`). When a new commit is detected, Jenkins automatically runs the frontend checks within the next polling cycle. Instant GitHub webhooks require a public Jenkins URL; a `localhost` or LAN-only URL cannot receive requests from GitHub.
+The Jenkinsfile starts builds immediately through `githubPush()` when a GitHub push webhook is delivered, and polls the GitHub `main` branch every minute (`H/1 * * * *`) as a fallback. Instant GitHub webhooks require a public Jenkins URL; a `localhost` or LAN-only URL cannot receive requests from GitHub. In a Multibranch Pipeline, ensure GitHub Branch Source webhook/scanning is enabled for the repository.
 
 ## Gmail notifications
 
