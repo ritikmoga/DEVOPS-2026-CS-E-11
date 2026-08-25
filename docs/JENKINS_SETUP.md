@@ -1,9 +1,10 @@
 # Jenkins, GitHub and Gmail setup
 
-The root `Jenkinsfile` runs these checks for both frontends:
+The root `Jenkinsfile` runs these checks for both frontends and the backend:
 
 - `frontend-demo/public-client`: typecheck and production build
 - `frontend-demo/admin-client`: typecheck and production build
+- `server`: Prisma client generation, Prisma schema validation, runtime JavaScript syntax checks and an API `/health` smoke test
 
 It creates a JUnit XML report and a Markdown report. Jenkins archives the reports and publishes a detailed GitHub Check when the Checks API plugin is installed.
 
@@ -15,7 +16,7 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Configure the GitHub repository webhook to send push events to `https://YOUR_JENKINS_URL/github-webhook/` with JSON delivery and enable the job's GitHub hook trigger.
 5. Use an agent with Node.js/npm installed. Node.js 20 or newer is recommended.
 
-The pipeline parameter `REPORT_EMAIL` defaults to `sumit.kumar@skit.ac.in, ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the GitHub `main` branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop.
+The pipeline parameter `REPORT_EMAIL` defaults to `sumit.kumar@skit.ac.in, ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the GitHub `main` branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop. The GitHub commit status context is `jenkins/full-stack` and includes backend verification.
 
 The `github-auth` credential must also allow repository contents write access because Jenkins publishes the generated reports back to GitHub. Commit-status permission is still required for the Jenkins status update.
 

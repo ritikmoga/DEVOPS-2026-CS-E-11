@@ -91,6 +91,15 @@ pipeline {
             }
         }
 
+        stage('Install backend dependencies') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                runInDirectory('server', 'npm install --no-audit --no-fund --no-package-lock')
+            }
+        }
+
         stage('Verify frontends') {
             when {
                 expression { env.REPORT_ONLY_COMMIT != 'true' }
@@ -102,6 +111,23 @@ pipeline {
                             sh 'node ci/verify-frontends.mjs'
                         } else {
                             bat 'node ci/verify-frontends.mjs'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify backend') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                withEnv(['DATABASE_URL=mongodb://127.0.0.1:1/ci-validation?replicaSet=rs0']) {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run verify --prefix server'
+                        } else {
+                            bat 'npm run verify --prefix server'
                         }
                     }
                 }
@@ -199,8 +225,8 @@ pipeline {
                             \$payload = @{
                                 state = '${githubState}'
                                 target_url = '${env.BUILD_URL}'
-                                description = 'Frontend verification: ${result}'
-                                context = 'jenkins/frontend'
+                                description = 'Full-stack verification: ${result}'
+                                context = 'jenkins/full-stack'
                             } | ConvertTo-Json
                             try {
                                 Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/DEVOPS-2026-CS-E-11/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
