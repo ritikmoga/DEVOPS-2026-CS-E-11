@@ -1,0 +1,16 @@
+{
+  "name": "eventhub-platform-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "install:all": "npm install --prefix frontend-demo/public-client && npm install --prefix frontend-demo/admin-client && npm install --prefix server",
+    "dev:public": "npm run dev --prefix frontend-demo/public-client",
+    "dev:admin": "npm run dev --prefix frontend-demo/admin-client",
+    "verify:frontends": "node ci/verify-frontends.mjs",
+    "verify:backend": "npm run verify --prefix server",
+    "verify": "npm run verify:frontends && npm run verify:backend"
+  }
+}
