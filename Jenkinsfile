@@ -85,8 +85,8 @@ pipeline {
             }
             steps {
                 script {
-                    runInDirectory('frontend-demo/public-client', 'npm install --no-audit --no-fund --no-package-lock')
-                    runInDirectory('frontend-demo/admin-client', 'npm install --no-audit --no-fund --no-package-lock')
+                    runInDirectory('frontend-demo/public-client', 'npm ci --no-audit --no-fund')
+                    runInDirectory('frontend-demo/admin-client', 'npm ci --no-audit --no-fund')
                 }
             }
         }
@@ -96,7 +96,7 @@ pipeline {
                 expression { env.REPORT_ONLY_COMMIT != 'true' }
             }
             steps {
-                runInDirectory('server', 'npm install --no-audit --no-fund --no-package-lock')
+                runInDirectory('server', 'npm ci --no-audit --no-fund')
             }
         }
 

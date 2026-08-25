@@ -14,13 +14,13 @@ The equivalent manual setup is:
 
 ```bash
 cd frontend-demo/public-client
-npm install
+npm ci
 
 cd ../admin-client
-npm install
+npm ci
 
 cd ../../server
-npm install
+npm ci
 ```
 
 Copy `server/.env.example` to `server/.env` and start MongoDB as a replica set. The API uses MongoDB transactions for registration and attendance workflows.

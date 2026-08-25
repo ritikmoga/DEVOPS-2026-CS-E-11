@@ -24,15 +24,15 @@ jobs:
 
       - name: Install public frontend dependencies
         working-directory: frontend-demo/public-client
-        run: npm install --no-audit --no-fund --no-package-lock
+        run: npm ci --no-audit --no-fund
 
       - name: Install admin frontend dependencies
         working-directory: frontend-demo/admin-client
-        run: npm install --no-audit --no-fund --no-package-lock
+        run: npm ci --no-audit --no-fund
 
       - name: Install backend dependencies
         working-directory: server
-        run: npm install --no-audit --no-fund --no-package-lock
+        run: npm ci --no-audit --no-fund
 
       - name: Run frontend checks
         run: node ci/verify-frontends.mjs
