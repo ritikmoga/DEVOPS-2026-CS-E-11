@@ -14,11 +14,7 @@ const checks = [
 
 const results = checks.map((check) => {
   const startedAt = Date.now();
-  const executable = process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : npmCommand;
-  const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', `${npmCommand} run ${check.command}`]
-    : ['run', check.command];
-  const result = spawnSync(executable, args, {
+  const result = spawnSync(npmCommand, ['run', check.command], {
     cwd: resolve(root, check.directory),
     encoding: 'utf8',
   });
