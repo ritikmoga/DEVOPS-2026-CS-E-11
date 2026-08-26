@@ -1,31 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Frontend CI" tests="4" failures="0" time="3.487">
-  <testcase classname="frontend/public-client" name="Public frontend JavaScript syntax check" time="0.282"><system-out><![CDATA[> @event-platform/public-client@1.0.0 typecheck
-> node --check src/app.js]]></system-out></testcase>
-  <testcase classname="frontend/public-client" name="Public frontend production build" time="1.717"><system-out><![CDATA[> @event-platform/public-client@1.0.0 build
-> vite build
-
-vite v6.4.3 building for production...
-transforming...
-✓ 59 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                   0.60 kB │ gzip:  0.37 kB
-dist/assets/index-BhwVLNNs.css   19.07 kB │ gzip:  4.98 kB
-dist/assets/index-CW5NfVjy.js   140.27 kB │ gzip: 49.10 kB
-✓ built in 802ms]]></system-out></testcase>
-  <testcase classname="frontend/admin-client" name="Admin frontend JavaScript syntax check" time="0.304"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 typecheck
-> node --check src/app.js]]></system-out></testcase>
-  <testcase classname="frontend/admin-client" name="Admin frontend production build" time="1.184"><system-out><![CDATA[> @event-platform/admin-client@1.0.0 build
-> vite build
-
-vite v6.4.3 building for production...
-transforming...
-✓ 9 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                   0.51 kB │ gzip:  0.33 kB
-dist/assets/index-Csz4oa1m.css   17.19 kB │ gzip:  4.55 kB
-dist/assets/index-Bz7w9fNx.js   120.44 kB │ gzip: 40.28 kB
-✓ built in 559ms]]></system-out></testcase>
+<testsuite name="Frontend CI" tests="4" failures="4" time="0.003">
+  <testcase classname="frontend/public-client" name="Public frontend JavaScript syntax check" time="0.002"><failure message="Public frontend JavaScript syntax check failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+  <testcase classname="frontend/public-client" name="Public frontend production build" time="0.001"><failure message="Public frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+  <testcase classname="frontend/admin-client" name="Admin frontend JavaScript syntax check" time="0.000"><failure message="Admin frontend JavaScript syntax check failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+  <testcase classname="frontend/admin-client" name="Admin frontend production build" time="0.000"><failure message="Admin frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
 </testsuite>
