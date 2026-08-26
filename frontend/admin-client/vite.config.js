@@ -1,0 +1,11 @@
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  server: {
+    port: 5174,
+    proxy: {
+      "/api": "http://localhost:5000",
+      "/health": "http://localhost:5000",
+    },
+  },
+});

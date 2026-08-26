@@ -1,0 +1,17 @@
+{
+  "name": "@event-platform/admin-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "vite build",
+    "typecheck": "node --check src/app.js"
+  },
+  "dependencies": {
+    "jquery": "3.7.1"
+  },
+  "devDependencies": {
+    "vite": "6.4.3"
+  }
+}

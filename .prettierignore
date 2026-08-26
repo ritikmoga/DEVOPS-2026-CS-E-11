@@ -1,0 +1,4 @@
+**/node_modules/**
+**/dist/assets/**
+reports/**
+server/prisma/migrations/**

@@ -1,6 +1,6 @@
 # Development and verification guide
 
-This repository contains two Vite frontends and an Express API runtime.
+This repository contains two vanilla HTML/CSS/JavaScript/jQuery frontends, an Express JavaScript API runtime, and a PostgreSQL database managed through Prisma.
 
 ## Local setup
 
@@ -13,7 +13,7 @@ npm run install:all
 The equivalent manual setup is:
 
 ```bash
-cd frontend-demo/public-client
+cd frontend/public-client
 npm ci
 
 cd ../admin-client
@@ -23,7 +23,15 @@ cd ../../server
 npm ci
 ```
 
-Copy `server/.env.example` to `server/.env` and start MongoDB as a replica set. The API uses MongoDB transactions for registration and attendance workflows.
+Copy `server/.env.example` to `server/.env`, start PostgreSQL, and apply the committed SQL migration. The default local credentials match `compose.yaml`:
+
+```bash
+docker compose up -d postgres
+npm run db:migrate
+npm run db:seed
+```
+
+The API uses PostgreSQL transactions for registration, ticket, attendance and certificate workflows.
 
 Start the API and frontends in separate terminals:
 
@@ -31,10 +39,10 @@ Start the API and frontends in separate terminals:
 cd server
 npm start
 
-cd frontend-demo/public-client
+cd frontend/public-client
 npm run dev
 
-cd frontend-demo/admin-client
+cd frontend/admin-client
 npm run dev
 ```
 
@@ -64,11 +72,17 @@ cd server
 npm run verify
 ```
 
-The backend verification validates the Prisma schema, checks every committed runtime JavaScript file with `node --check`, starts the API with an isolated test port, and confirms that `/health` returns a successful response. The health check does not require a running MongoDB instance.
+The backend verification validates the PostgreSQL Prisma schema, checks every committed runtime JavaScript file with `node --check`, starts the API with an isolated test port, and confirms that `/health` returns a successful response. The health check does not require a running PostgreSQL instance.
 
 Both GitHub Actions and Jenkins run these checks. Jenkins continues to publish the frontend JUnit/Markdown reports and now reports the combined result as `jenkins/full-stack`.
 CI injects an isolated `DATABASE_URL` only for Prisma validation; it does not connect to or modify a real database.
 
-## Backend source note
+## Source layout
 
-The current backend runtime is committed under `server/dist`. The repository should eventually restore the original TypeScript source and add a reproducible TypeScript build step. Until then, backend runtime edits must be reflected in `server/dist` so that `npm start` and CI execute the changed code.
+- Public browser app: `frontend/public-client/src/app.js`
+- Admin browser app: `frontend/admin-client/src/app.js`
+- API runtime: `server/dist/src/*.js`
+- PostgreSQL data model: `server/prisma/schema.prisma`
+- SQL migration: `server/prisma/migrations/0001_postgresql_baseline/migration.sql`
+
+The backend is intentionally maintained as JavaScript under `server/dist`, which is also the directory executed by `npm start` and CI.

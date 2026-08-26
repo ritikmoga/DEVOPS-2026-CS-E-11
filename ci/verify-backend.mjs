@@ -42,10 +42,7 @@ function runNodeCheck(filePath) {
 
   return {
     passed: result.status === 0 && !result.error,
-    output: [result.stdout, result.stderr, result.error?.message]
-      .filter(Boolean)
-      .join("\n")
-      .trim(),
+    output: [result.stdout, result.stderr, result.error?.message].filter(Boolean).join("\n").trim(),
   };
 }
 
@@ -83,7 +80,7 @@ async function smokeTestHealthEndpoint() {
       ...process.env,
       NODE_ENV: "test",
       PORT: String(port),
-      DATABASE_URL: "mongodb://127.0.0.1:1/ci-health-check?replicaSet=rs0",
+      DATABASE_URL: "postgresql://eventhub:eventhub@127.0.0.1:5432/ci_health_check?schema=public",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -127,7 +124,9 @@ async function main() {
   }
 
   await smokeTestHealthEndpoint();
-  console.log(`Backend verification passed: ${javascriptFiles.length} runtime files checked and /health responded successfully.`);
+  console.log(
+    `Backend verification passed: ${javascriptFiles.length} runtime files checked and /health responded successfully.`,
+  );
 }
 
 main().catch((error) => {

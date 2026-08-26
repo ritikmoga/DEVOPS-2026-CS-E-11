@@ -7,5 +7,4 @@ server/node_modules/
 node_modules/
 
 # Frontend build output and TypeScript incremental state
-frontend-demo/**/dist/
-frontend-demo/**/tsconfig.tsbuildinfo
+frontend/**/dist/

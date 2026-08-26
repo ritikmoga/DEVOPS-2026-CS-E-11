@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -132,7 +132,7 @@ enum AuthTokenType {
 }
 
 model User {
-  id                   String                  @id @default(uuid()) @map("_id")
+  id                   String                  @id @default(uuid())
   email                String                  @unique
   passwordHash         String
   fullName             String
@@ -166,7 +166,7 @@ model User {
 }
 
 model Role {
-  id          String           @id @default(uuid()) @map("_id")
+  id          String           @id @default(uuid())
   name        RoleName         @unique
   description String?
   users       UserRole[]
@@ -174,14 +174,14 @@ model Role {
 }
 
 model Permission {
-  id          String           @id @default(uuid()) @map("_id")
+  id          String           @id @default(uuid())
   code        String           @unique
   description String?
   roles       RolePermission[]
 }
 
 model UserRole {
-  id     String @id @default(uuid()) @map("_id")
+  id     String @id @default(uuid())
   userId String
   roleId String
   user   User   @relation(fields: [userId], references: [id])
@@ -192,7 +192,7 @@ model UserRole {
 }
 
 model RolePermission {
-  id           String     @id @default(uuid()) @map("_id")
+  id           String     @id @default(uuid())
   roleId       String
   permissionId String
   role         Role       @relation(fields: [roleId], references: [id])
@@ -203,7 +203,7 @@ model RolePermission {
 }
 
 model Session {
-  id               String    @id @default(uuid()) @map("_id")
+  id               String    @id @default(uuid())
   userId           String
   refreshTokenHash String
   userAgent        String?
@@ -218,7 +218,7 @@ model Session {
 }
 
 model AuthToken {
-  id        String        @id @default(uuid()) @map("_id")
+  id        String        @id @default(uuid())
   userId    String
   tokenHash String        @unique
   type      AuthTokenType
@@ -232,14 +232,14 @@ model AuthToken {
 }
 
 model EventCategory {
-  id          String  @id @default(uuid()) @map("_id")
+  id          String  @id @default(uuid())
   name        String  @unique
   description String?
   events      Event[]
 }
 
 model Organizer {
-  id           String   @id @default(uuid()) @map("_id")
+  id           String   @id @default(uuid())
   name         String
   contactEmail String?
   contactPhone String?
@@ -249,7 +249,7 @@ model Organizer {
 }
 
 model Event {
-  id                          String           @id @default(uuid()) @map("_id")
+  id                          String           @id @default(uuid())
   title                       String
   slug                        String           @unique
   shortDescription            String
@@ -285,7 +285,7 @@ model Event {
   speakers                    Json?
   prizes                      Json?
   contactDetails              Json?
-  tags                        String[]
+  tags                        String[]         @default([])
   status                      EventStatus      @default(DRAFT)
   createdById                 String
   publishedAt                 DateTime?
@@ -309,7 +309,7 @@ model Event {
 }
 
 model EventDocument {
-  id           String   @id @default(uuid()) @map("_id")
+  id           String   @id @default(uuid())
   eventId      String
   name         String
   storageKey   String
@@ -325,7 +325,7 @@ model EventDocument {
 }
 
 model Registration {
-  id                 String               @id @default(uuid()) @map("_id")
+  id                 String               @id @default(uuid())
   eventId            String
   userId             String
   registrationNumber String               @unique
@@ -347,7 +347,7 @@ model Registration {
 }
 
 model RegistrationAnswer {
-  id             String       @id @default(uuid()) @map("_id")
+  id             String       @id @default(uuid())
   registrationId String
   fieldKey       String
   value          Json
@@ -357,7 +357,7 @@ model RegistrationAnswer {
 }
 
 model Team {
-  id         String       @id @default(uuid()) @map("_id")
+  id         String       @id @default(uuid())
   eventId    String
   name       String
   leaderId   String
@@ -371,7 +371,7 @@ model Team {
 }
 
 model TeamMember {
-  id       String         @id @default(uuid()) @map("_id")
+  id       String         @id @default(uuid())
   teamId   String
   userId   String
   role     TeamMemberRole @default(MEMBER)
@@ -384,7 +384,7 @@ model TeamMember {
 }
 
 model Ticket {
-  id             String       @id @default(uuid()) @map("_id")
+  id             String       @id @default(uuid())
   registrationId String       @unique
   tokenHash      String       @unique
   nonce          String       @unique
@@ -396,7 +396,7 @@ model Ticket {
 }
 
 model Attendance {
-  id                   String           @id @default(uuid()) @map("_id")
+  id                   String           @id @default(uuid())
   eventId              String
   registrationId       String           @unique
   userId               String
@@ -421,7 +421,7 @@ model Attendance {
 }
 
 model Proof {
-  id                   String      @id @default(uuid()) @map("_id")
+  id                   String      @id @default(uuid())
   userId               String
   eventId              String
   type                 ProofType
@@ -445,7 +445,7 @@ model Proof {
 }
 
 model Certificate {
-  id                String            @id @default(uuid()) @map("_id")
+  id                String            @id @default(uuid())
   certificateNumber String            @unique
   eventId           String
   userId            String
@@ -466,7 +466,7 @@ model Certificate {
 }
 
 model Notification {
-  id         String                  @id @default(uuid()) @map("_id")
+  id         String                  @id @default(uuid())
   type       NotificationType
   title      String
   message    String
@@ -479,7 +479,7 @@ model Notification {
 }
 
 model NotificationRecipient {
-  id             String       @id @default(uuid()) @map("_id")
+  id             String       @id @default(uuid())
   notificationId String
   userId         String
   readAt         DateTime?
@@ -492,7 +492,7 @@ model NotificationRecipient {
 }
 
 model AuditLog {
-  id           String   @id @default(uuid()) @map("_id")
+  id           String   @id @default(uuid())
   actorId      String?
   action       String
   resourceType String
@@ -511,7 +511,7 @@ model AuditLog {
 }
 
 model FileRecord {
-  id           String         @id @default(uuid()) @map("_id")
+  id           String         @id @default(uuid())
   objectKey    String         @unique
   url          String
   originalName String
@@ -527,7 +527,7 @@ model FileRecord {
 }
 
 model SystemSetting {
-  id          String   @id @default(uuid()) @map("_id")
+  id          String   @id @default(uuid())
   key         String   @unique
   value       Json
   description String?
@@ -535,7 +535,7 @@ model SystemSetting {
 }
 
 model SequenceCounter {
-  id        String   @id @default(uuid()) @map("_id")
+  id        String   @id @default(uuid())
   key       String   @unique
   value     Int      @default(0)
   updatedAt DateTime @updatedAt

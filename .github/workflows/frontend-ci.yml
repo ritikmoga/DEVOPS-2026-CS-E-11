@@ -23,11 +23,11 @@ jobs:
           node-version: 20
 
       - name: Install public frontend dependencies
-        working-directory: frontend-demo/public-client
+        working-directory: frontend/public-client
         run: npm ci --no-audit --no-fund
 
       - name: Install admin frontend dependencies
-        working-directory: frontend-demo/admin-client
+        working-directory: frontend/admin-client
         run: npm ci --no-audit --no-fund
 
       - name: Install backend dependencies
@@ -39,7 +39,7 @@ jobs:
 
       - name: Run backend checks
         env:
-          DATABASE_URL: mongodb://127.0.0.1:1/ci-validation?replicaSet=rs0
+          DATABASE_URL: postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public
         run: npm run verify --prefix server
 
       - name: Upload frontend reports

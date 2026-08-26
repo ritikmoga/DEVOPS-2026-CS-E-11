@@ -85,8 +85,8 @@ pipeline {
             }
             steps {
                 script {
-                    runInDirectory('frontend-demo/public-client', 'npm ci --no-audit --no-fund')
-                    runInDirectory('frontend-demo/admin-client', 'npm ci --no-audit --no-fund')
+                    runInDirectory('frontend/public-client', 'npm ci --no-audit --no-fund')
+                    runInDirectory('frontend/admin-client', 'npm ci --no-audit --no-fund')
                 }
             }
         }
@@ -122,7 +122,7 @@ pipeline {
                 expression { env.REPORT_ONLY_COMMIT != 'true' }
             }
             steps {
-                withEnv(['DATABASE_URL=mongodb://127.0.0.1:1/ci-validation?replicaSet=rs0']) {
+                withEnv(['DATABASE_URL=postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public']) {
                     script {
                         if (isUnix()) {
                             sh 'npm run verify --prefix server'
