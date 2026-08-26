@@ -1,37 +1,61 @@
 # Frontend CI report
 
-- Commit: 5e5eb52b8f9b65165e29aca568a15ec1372b1df0
-- Result: **FAILED**
+- Commit: local
+- Result: **PASSED**
 
 | Check | Result | Duration |
 | --- | --- | ---: |
-| Public frontend JavaScript syntax check | ❌ Failed | 0.00s |
-| Public frontend production build | ❌ Failed | 0.00s |
-| Admin frontend JavaScript syntax check | ❌ Failed | 0.00s |
-| Admin frontend production build | ❌ Failed | 0.00s |
+| Public frontend JavaScript syntax check | ✅ Passed | 0.26s |
+| Public frontend production build | ✅ Passed | 1.25s |
+| Admin frontend JavaScript syntax check | ✅ Passed | 0.26s |
+| Admin frontend production build | ✅ Passed | 1.26s |
 
 ## Output
 
 ### Public frontend JavaScript syntax check
 
 ```text
-spawnSync npm.cmd EINVAL
+> @event-platform/public-client@1.0.0 typecheck
+> node --check src/app.js
 ```
 
 ### Public frontend production build
 
 ```text
-spawnSync npm.cmd EINVAL
+> @event-platform/public-client@1.0.0 build
+> vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 59 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.58 kB[22m[1m[22m[2m │ gzip:  0.36 kB[22m
+[2mdist/[22m[35massets/index-BhwVLNNs.css  [39m[1m[2m 19.07 kB[22m[1m[22m[2m │ gzip:  4.98 kB[22m
+[2mdist/[22m[36massets/index-BqjgrXXw.js   [39m[1m[2m140.29 kB[22m[1m[22m[2m │ gzip: 49.11 kB[22m
+[32m✓ built in 629ms[39m
 ```
 
 ### Admin frontend JavaScript syntax check
 
 ```text
-spawnSync npm.cmd EINVAL
+> @event-platform/admin-client@1.0.0 typecheck
+> node --check src/app.js
 ```
 
 ### Admin frontend production build
 
 ```text
-spawnSync npm.cmd EINVAL
+> @event-platform/admin-client@1.0.0 build
+> vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 9 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.50 kB[22m[1m[22m[2m │ gzip:  0.32 kB[22m
+[2mdist/[22m[35massets/index-Csz4oa1m.css  [39m[1m[2m 17.19 kB[22m[1m[22m[2m │ gzip:  4.55 kB[22m
+[2mdist/[22m[36massets/index-D6ucyzyy.js   [39m[1m[2m120.46 kB[22m[1m[22m[2m │ gzip: 40.29 kB[22m
+[32m✓ built in 559ms[39m
 ```
