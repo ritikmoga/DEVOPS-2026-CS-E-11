@@ -1,0 +1,51 @@
+name: Full Stack CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-full-stack:
+    name: Verify full stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install public frontend dependencies
+        working-directory: frontend/public-client
+        run: npm ci --no-audit --no-fund
+
+      - name: Install admin frontend dependencies
+        working-directory: frontend/admin-client
+        run: npm ci --no-audit --no-fund
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci --no-audit --no-fund
+
+      - name: Run frontend checks
+        run: node ci/verify-frontends.mjs
+
+      - name: Run backend checks
+        env:
+          DATABASE_URL: postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public
+        run: npm run verify --prefix server
+
+      - name: Upload frontend reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-reports
+          path: reports/
+          if-no-files-found: ignore

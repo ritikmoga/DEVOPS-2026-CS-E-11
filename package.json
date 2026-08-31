@@ -1,0 +1,25 @@
+{
+  "name": "eventhub-platform-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix frontend/public-client && npm ci --prefix frontend/admin-client && npm ci --prefix server",
+    "dev:public": "npm run dev --prefix frontend/public-client",
+    "dev:admin": "npm run dev --prefix frontend/admin-client",
+    "start:api": "npm start --prefix server",
+    "db:migrate": "npm run prisma:migrate --prefix server",
+    "db:seed": "npm run seed --prefix server",
+    "db:verify": "npm run db:verify --prefix server",
+    "format": "prettier --write README.md package.json compose.yaml .github/workflows/*.yml ci/*.mjs docs/*.md frontend/**/*.{html,css,js,json,md} server/dist/**/*.js server/scripts/**/*.js server/package.json",
+    "format:check": "prettier --check README.md package.json compose.yaml .github/workflows/*.yml ci/*.mjs docs/*.md frontend/**/*.{html,css,js,json,md} server/dist/**/*.js server/scripts/**/*.js server/package.json",
+    "verify:frontends": "node ci/verify-frontends.mjs",
+    "verify:backend": "npm run verify --prefix server",
+    "verify": "npm run format:check && npm run verify:frontends && npm run verify:backend"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

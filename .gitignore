@@ -1,0 +1,10 @@
+# Runtime and generated data
+logs/
+
+# Local secrets and dependencies
+server/.env
+server/node_modules/
+node_modules/
+
+# Frontend build output and TypeScript incremental state
+frontend/**/dist/

@@ -17,15 +17,18 @@ pipeline {
     }
 
     triggers {
+        // Start immediately when the GitHub webhook reaches Jenkins.
+        // Keep polling as a fallback when Jenkins/GitHub cannot deliver the webhook.
+        githubPush()
         pollSCM('H/1 * * * *')
     }
 
     parameters {
         string(
             name: 'REPORT_EMAIL',
-            defaultValue: 'ritikmoga13@gmail.com',
+            defaultValue: 'sumit.kumar@skit.ac.in, ritikmoga13@gmail.com',
             trim: true,
-            description: 'Gmail address that receives the Jenkins frontend report'
+            description: 'Comma-separated recipients for the Jenkins frontend report'
         )
     }
 
@@ -62,16 +65,45 @@ pipeline {
             }
         }
 
-        stage('Install frontend dependencies') {
+        stage('Detect report publication commit') {
             steps {
                 script {
-                    runInDirectory('frontend-demo/public-client', 'npm install --no-audit --no-fund --no-package-lock')
-                    runInDirectory('frontend-demo/admin-client', 'npm install --no-audit --no-fund --no-package-lock')
+                    def subject = isUnix()
+                        ? sh(returnStdout: true, script: 'git log -1 --pretty=%s').trim()
+                        : bat(returnStdout: true, script: '@git log -1 --pretty=%%s').trim()
+                    env.REPORT_ONLY_COMMIT = subject.startsWith('[skip ci] ci: publish frontend test report') ? 'true' : 'false'
+                    if (env.REPORT_ONLY_COMMIT == 'true') {
+                        echo 'Report publication commit detected; skipping test execution to prevent a CI loop.'
+                    }
                 }
             }
         }
 
+        stage('Install frontend dependencies') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                script {
+                    runInDirectory('frontend/public-client', 'npm ci --no-audit --no-fund')
+                    runInDirectory('frontend/admin-client', 'npm ci --no-audit --no-fund')
+                }
+            }
+        }
+
+        stage('Install backend dependencies') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                runInDirectory('server', 'npm ci --no-audit --no-fund')
+            }
+        }
+
         stage('Verify frontends') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
             steps {
                 script {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
@@ -84,16 +116,83 @@ pipeline {
                 }
             }
         }
+
+        stage('Verify backend') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                withEnv(['DATABASE_URL=postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public']) {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run verify --prefix server'
+                        } else {
+                            bat 'npm run verify --prefix server'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Publish report to GitHub') {
+            when {
+                expression { env.REPORT_ONLY_COMMIT != 'true' }
+            }
+            steps {
+                script {
+                    if (fileExists('reports/frontend-test-report.md')) {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: 'github-auth',
+                                    usernameVariable: 'GITHUB_USERNAME',
+                                    passwordVariable: 'GITHUB_TOKEN'
+                                )
+                            ]) {
+                                def reportBranch = 'main'
+                                if (isUnix()) {
+                                    sh """
+                                        set +x
+                                        git config user.name 'Jenkins'
+                                        git config user.email 'jenkins@users.noreply.github.com'
+                                        git add reports/frontend-test-report.md reports/frontend-junit.xml
+                                        if git diff --cached --quiet; then exit 0; fi
+                                        git commit -m '[skip ci] ci: publish frontend test report'
+                                        git push https://\$GITHUB_USERNAME:\$GITHUB_TOKEN@github.com/ritikmoga/DEVOPS-2026-CS-E-11.git HEAD:${reportBranch}
+                                    """
+                                } else {
+                                    bat """
+                                        @echo off
+                                        git config user.name Jenkins
+                                        git config user.email jenkins@users.noreply.github.com
+                                        git add reports/frontend-test-report.md reports/frontend-junit.xml
+                                        git diff --cached --quiet
+                                        if %ERRORLEVEL% EQU 0 exit /b 0
+                                        git commit -m "[skip ci] ci: publish frontend test report"
+                                        git push https://%GITHUB_USERNAME%:%GITHUB_TOKEN%@github.com/ritikmoga/DEVOPS-2026-CS-E-11.git HEAD:${reportBranch}
+                                    """
+                                }
+                            }
+                        }
+                    } else {
+                        echo 'No frontend Markdown report was generated; nothing to publish.'
+                    }
+                }
+            }
+        }
     }
 
     post {
         always {
             script {
                 def result = currentBuild.currentResult ?: 'FAILURE'
-                if (fileExists('reports/frontend-junit.xml')) {
+                def reportOnlyCommit = env.REPORT_ONLY_COMMIT == 'true'
+                if (!reportOnlyCommit && fileExists('reports/frontend-junit.xml')) {
                     junit testResults: 'reports/frontend-junit.xml', allowEmptyResults: false
                 } else {
-                    echo 'No current-build JUnit report found; skipping test-result publication.'
+                    echo reportOnlyCommit
+                        ? 'Report publication commit detected; skipping duplicate test-result publication.'
+                        : 'No current-build JUnit report found; skipping test-result publication.'
                 }
 
                 archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true, fingerprint: true
@@ -107,7 +206,7 @@ pipeline {
 
                 // Publish a GitHub commit status only after this build checked out a commit.
                 // This prevents a failed fetch from updating a stale workspace commit.
-                if (checkoutComplete && commit) {
+                if (!reportOnlyCommit && checkoutComplete && commit) {
                     try {
                     def githubState = result == 'SUCCESS' ? 'success' : 'failure'
                     withCredentials([
@@ -126,11 +225,11 @@ pipeline {
                             \$payload = @{
                                 state = '${githubState}'
                                 target_url = '${env.BUILD_URL}'
-                                description = 'Frontend verification: ${result}'
-                                context = 'jenkins/frontend'
+                                description = 'Full-stack verification: ${result}'
+                                context = 'jenkins/full-stack'
                             } | ConvertTo-Json
                             try {
-                                Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/EVENT_MANAGEMENT_SYSTEM-MERN-STACK/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
+                                Invoke-RestMethod -Uri 'https://api.github.com/repos/ritikmoga/DEVOPS-2026-CS-E-11/statuses/${commit}' -Method Post -Headers \$headers -Body \$payload -ContentType 'application/json'
                                 Write-Host 'GitHub commit status published.'
                                 exit 0
                             } catch {
@@ -145,22 +244,35 @@ pipeline {
                     } catch (err) {
                         echo "GitHub status was not published: ${err}"
                     }
+                } else if (reportOnlyCommit) {
+                    echo 'Skipping GitHub status because this is a report publication commit.'
                 } else {
                     echo 'Skipping GitHub status because checkout did not complete.'
                 }
 
                 def recipient = params.REPORT_EMAIL?.trim()
-                if (recipient) {
+                if (!reportOnlyCommit && recipient) {
                     try {
+                        def emailBody = """Frontend test report
+
+${report}
+
+Jenkins build: ${env.BUILD_URL}
+
+The Markdown and JUnit report files are attached to this email as well.
+"""
                         emailext(
                             to: recipient,
                             subject: "${env.JOB_NAME} #${env.BUILD_NUMBER}: frontend ${result}",
-                            body: "${report}\n\nJenkins build: ${env.BUILD_URL}",
-                            attachmentsPattern: 'reports/frontend-test-report.md'
+                            body: emailBody,
+                            mimeType: 'text/plain',
+                            attachmentsPattern: 'reports/frontend-test-report.md,reports/frontend-junit.xml'
                         )
                     } catch (err) {
                         echo "Email report was not sent: ${err}"
                     }
+                } else if (reportOnlyCommit) {
+                    echo 'Skipping duplicate email for a report publication commit.'
                 } else {
                     echo 'REPORT_EMAIL is empty; skipping email notification.'
                 }
