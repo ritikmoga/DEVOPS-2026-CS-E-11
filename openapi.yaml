@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: EventHub API
+  version: 1.0.0
+  description: |
+    REST API for EventHub event discovery, registrations, tickets, attendance,
+    proofs, certificates and administration. All JSON responses use the envelope
+    `{ success, data, message }` on success and
+    `{ success: false, message, code, errors }` on failure.
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local development
+tags:
+  - name: Authentication
+  - name: Events
+  - name: Participant
+  - name: Administration
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Create a participant account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate and set a refresh-token cookie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Access token and account profile
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Exchange the refresh-token cookie for a new access token
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke the current refresh token
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /auth/me:
+    get:
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      summary: Get the current account and permissions
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /events:
+    get:
+      tags: [Events]
+      summary: List discoverable events
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: mode, in: query, schema: { type: string, enum: [ONLINE, OFFLINE, HYBRID] } }
+      responses:
+        '200': { $ref: '#/components/responses/Paginated' }
+  /events/{slug}:
+    get:
+      tags: [Events]
+      summary: Get a single event by URL slug
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /event-categories:
+    get:
+      tags: [Events]
+      summary: List event categories
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /stats:
+    get:
+      tags: [Events]
+      summary: Get public platform totals
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /certificates/verify/{certificateNumber}:
+    get:
+      tags: [Participant]
+      summary: Verify a public certificate
+      parameters:
+        - { name: certificateNumber, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /events/{eventId}/register:
+    post:
+      tags: [Participant]
+      security: [{ bearerAuth: [] }]
+      summary: Register the current user for an event
+      parameters:
+        - { name: eventId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { answers: { type: object } } }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { description: Registration is not available or already exists }
+  /registrations/me:
+    get:
+      tags: [Participant]
+      security: [{ bearerAuth: [] }]
+      summary: List current user registrations
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Limit' }]
+      responses: { '200': { $ref: '#/components/responses/Paginated' } }
+  /registrations/{id}/ticket:
+    post:
+      tags: [Participant]
+      security: [{ bearerAuth: [] }]
+      summary: Issue or retrieve a signed ticket token
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /proofs/upload:
+    post:
+      tags: [Participant]
+      security: [{ bearerAuth: [] }]
+      summary: Upload an attendance or supporting proof
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, eventId, type]
+              properties:
+                file: { type: string, format: binary }
+                eventId: { type: string, format: uuid }
+                type: { type: string, enum: [ATTENDANCE_PHOTO, CERTIFICATE, EVENT_TICKET, RESULT_SHEET, ORGANIZER_LETTER, OTHER] }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
+  /certificates/me:
+    get:
+      tags: [Participant]
+      security: [{ bearerAuth: [] }]
+      summary: List current user certificates
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /admin/events:
+    get:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: List events for administrators
+      responses: { '200': { $ref: '#/components/responses/Paginated' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Create an event
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EventInput' } } }
+      responses: { '201': { $ref: '#/components/responses/Created' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /admin/events/{id}/publish:
+    post:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Publish a draft event
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /admin/registrations:
+    get:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Search registrations
+      responses: { '200': { $ref: '#/components/responses/Paginated' } }
+  /admin/attendance/{action}:
+    post:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Validate a ticket or record check-in/check-out
+      parameters:
+        - { name: action, in: path, required: true, schema: { type: string, enum: [validate-ticket, check-in, check-out] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TicketRequest' } } }
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+  /admin/proofs:
+    get:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Review submitted proofs
+      responses: { '200': { $ref: '#/components/responses/Paginated' } }
+  /admin/analytics/overview:
+    get:
+      tags: [Administration]
+      security: [{ bearerAuth: [] }]
+      summary: Get administrative dashboard metrics
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, fullName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        confirmPassword: { type: string, minLength: 8 }
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        phone: { type: string }
+        college: { type: string }
+        department: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    EventInput:
+      type: object
+      required: [title, shortDescription, description, startAt, endAt, registrationStartAt, registrationEndAt, capacity]
+      properties:
+        title: { type: string, minLength: 3 }
+        shortDescription: { type: string, minLength: 5 }
+        description: { type: string, minLength: 5 }
+        mode: { type: string, enum: [ONLINE, OFFLINE, HYBRID], default: OFFLINE }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        registrationStartAt: { type: string, format: date-time }
+        registrationEndAt: { type: string, format: date-time }
+        capacity: { type: integer, minimum: 1 }
+        tags: { type: array, items: { type: string } }
+    TicketRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 10 }
+        eventId: { type: string, format: uuid }
+        latitude: { type: number }
+        longitude: { type: number }
+    SuccessResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { nullable: true }
+        message: { type: string }
+    ErrorResponse:
+      type: object
+      required: [success, message, code]
+      properties:
+        success: { type: boolean, example: false }
+        code: { type: string, example: VALIDATION_ERROR }
+        message: { type: string }
+        errors: { type: array, items: {} }
+  responses:
+    Success: { description: Successful response, content: { application/json: { schema: { $ref: '#/components/schemas/SuccessResponse' } } } }
+    Created: { description: Resource created, content: { application/json: { schema: { $ref: '#/components/schemas/SuccessResponse' } } } }
+    Paginated: { description: Paginated successful response, content: { application/json: { schema: { $ref: '#/components/schemas/SuccessResponse' } } } }
+    ValidationError: { description: Invalid request payload, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    Unauthorized: { description: Authentication required or invalid, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    Forbidden: { description: Missing required permission, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
