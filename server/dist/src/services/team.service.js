@@ -1,4 +1,4 @@
-import { TeamMemberRole } from "@prisma/client";
+const TeamMemberRole = Object.freeze({ LEADER: "LEADER", MEMBER: "MEMBER" });
 import { prisma } from "../prisma.js";
 import { opaqueToken } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";

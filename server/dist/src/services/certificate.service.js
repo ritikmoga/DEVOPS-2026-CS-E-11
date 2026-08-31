@@ -1,4 +1,4 @@
-import { CertificateStatus } from "@prisma/client";
+const CertificateStatus = Object.freeze({ ISSUED: "ISSUED", REVOKED: "REVOKED" });
 import { prisma } from "../prisma.js";
 import { storage } from "../storage/storage.service.js";
 import { opaqueToken, sequenceValue } from "../utils/crypto.js";
