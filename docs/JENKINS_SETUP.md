@@ -22,6 +22,10 @@ The `github-auth` credential must also allow repository contents write access be
 
 The Jenkinsfile starts builds immediately through `githubPush()` when a GitHub push webhook is delivered, and polls the GitHub `main` branch every minute (`H/1 * * * *`) as a fallback. Instant GitHub webhooks require a public Jenkins URL; a `localhost` or LAN-only URL cannot receive requests from GitHub. In a Multibranch Pipeline, ensure GitHub Branch Source webhook/scanning is enabled for the repository.
 
+## Keep Jenkins available after restart
+
+GitHub cannot start a stopped local Jenkins instance: the webhook has to reach an already-running public endpoint. Run `tools/Keep-JenkinsWebhookOnline.ps1` at Windows sign-in to keep Jenkins and its public tunnel available. The script starts Jenkins when needed, recreates a localhost.run tunnel after an interruption, and updates the repository webhook with the new temporary URL. It requires the GitHub CLI to be authenticated for the Windows user with the `admin:repo_hook` scope.
+
 ## Gmail notifications
 
 Configure SMTP globally in Jenkins; do not commit an SMTP password:
