@@ -100,7 +100,13 @@ while ($true) {
             Add-Content -LiteralPath $supervisorLog -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Tunnel URL was not assigned; retrying."
         }
 
-        $tunnel.WaitForExit()
+        while (-not $tunnel.HasExited) {
+            if (-not (Test-JenkinsReady)) {
+                Add-Content -LiteralPath $supervisorLog -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Jenkins is unavailable; starting it again."
+                Start-JenkinsIfNeeded
+            }
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
     } catch {
         Add-Content -LiteralPath $supervisorLog -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $($_.Exception.Message)"
     }
