@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "install:all": "npm ci --prefix frontend/public-client && npm ci --prefix frontend/admin-client && npm ci --prefix server",
+    "install:all": "npm ci --no-audit --no-fund --prefix frontend/public-client && npm ci --no-audit --no-fund --prefix frontend/admin-client && npm ci --no-audit --no-fund --prefix server",
     "dev:public": "npm run dev --prefix frontend/public-client",
     "dev:admin": "npm run dev --prefix frontend/admin-client",
     "start:api": "npm start --prefix server",
