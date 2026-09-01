@@ -1,6 +1,6 @@
 # Frontend CI report
 
-- Commit: 3b73aa77b6df3ecda01e2df1e215495fce246e0f
+- Commit: 97a0dfdf36fdf8be96a322966c462daf4f903550
 - Result: **FAILED**
 
 | Check | Result | Duration |
