@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Frontend CI" tests="4" failures="4" time="0.001">
-  <testcase classname="frontend/public-client" name="Public frontend JavaScript syntax check" time="0.001"><failure message="Public frontend JavaScript syntax check failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
-  <testcase classname="frontend/public-client" name="Public frontend production build" time="0.000"><failure message="Public frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+<testsuite name="Frontend CI" tests="4" failures="4" time="0.005">
+  <testcase classname="frontend/public-client" name="Public frontend JavaScript syntax check" time="0.003"><failure message="Public frontend JavaScript syntax check failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+  <testcase classname="frontend/public-client" name="Public frontend production build" time="0.001"><failure message="Public frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
   <testcase classname="frontend/admin-client" name="Admin frontend JavaScript syntax check" time="0.000"><failure message="Admin frontend JavaScript syntax check failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
-  <testcase classname="frontend/admin-client" name="Admin frontend production build" time="0.000"><failure message="Admin frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
+  <testcase classname="frontend/admin-client" name="Admin frontend production build" time="0.001"><failure message="Admin frontend production build failed"><![CDATA[spawnSync npm.cmd EINVAL]]></failure><system-out><![CDATA[spawnSync npm.cmd EINVAL]]></system-out></testcase>
 </testsuite>
