@@ -161,18 +161,20 @@ export async function issueTicket(id, userId) {
     );
   const token = opaqueToken(32);
   await prisma.$transaction(async (tx) => {
-    await tx.ticket.updateMany({
-      where: { registrationId: id, status: "ACTIVE" },
-      data: { status: "REVOKED", revokedAt: new Date() },
-    });
-    await tx.ticket.create({
-      data: {
-        registrationId: id,
-        tokenHash: hashToken(token),
-        nonce: opaqueToken(16),
-        status: "ACTIVE",
-      },
-    });
+    const existingTicket = await tx.ticket.findUnique({ where: { registrationId: id } });
+    const ticketData = {
+      tokenHash: hashToken(token),
+      nonce: opaqueToken(16),
+      status: "ACTIVE",
+      revokedAt: null,
+      issuedAt: new Date(),
+    };
+
+    if (existingTicket) {
+      await tx.ticket.update({ where: { id: existingTicket.id }, data: ticketData });
+    } else {
+      await tx.ticket.create({ data: { registrationId: id, ...ticketData } });
+    }
   });
   return { registrationId: id, ticketToken: token };
 }

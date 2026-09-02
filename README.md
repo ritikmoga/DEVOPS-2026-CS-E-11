@@ -44,3 +44,5 @@ npm run dev:admin
 For the first production administrator, set `BOOTSTRAP_ADMIN_EMAIL` and a 12+ character `BOOTSTRAP_ADMIN_PASSWORD` in `server/.env` before running `npm run db:seed`. No sample users, events, credentials, analytics, or mock API responses are included.
 
 Run the complete project verification with `npm run verify`.
+
+For a code-grounded architecture explanation, demo sequence, and review preparation, read [the project walkthrough](docs/PROJECT_WALKTHROUGH.md).

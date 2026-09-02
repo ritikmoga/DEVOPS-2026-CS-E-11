@@ -1,11 +1,14 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const npmCli = process.env.npm_execpath;
+const bundledWindowsNpmCli = resolve(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js");
+const npmCli =
+  process.env.npm_execpath ||
+  (process.platform === "win32" && existsSync(bundledWindowsNpmCli) ? bundledWindowsNpmCli : null);
 const checks = [
   {
     name: "Public frontend JavaScript syntax check",
@@ -33,6 +36,9 @@ const results = checks.map((check) => {
     {
       cwd: resolve(root, check.directory),
       encoding: "utf8",
+      // Windows command shims such as npm.cmd require cmd.exe when the npm
+      // JavaScript CLI is not available beside the Node executable.
+      shell: process.platform === "win32" && !npmCli,
     },
   );
   const output = [result.stdout, result.stderr, result.error?.message]

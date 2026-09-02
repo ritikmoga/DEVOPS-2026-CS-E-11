@@ -1,4 +1,15 @@
-import { PrismaClient, RoleName } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+
+const RoleName = Object.freeze({
+  STUDENT: "STUDENT",
+  USER: "USER",
+  CHECKIN_STAFF: "CHECKIN_STAFF",
+  EVENT_COORDINATOR: "EVENT_COORDINATOR",
+  FACULTY: "FACULTY",
+  ORGANIZER: "ORGANIZER",
+  ADMIN: "ADMIN",
+  SUPER_ADMIN: "SUPER_ADMIN",
+});
 import bcrypt from "bcryptjs";
 import "dotenv/config";
 

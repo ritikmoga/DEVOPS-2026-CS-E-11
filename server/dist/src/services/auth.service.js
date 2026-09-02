@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { AuthTokenType, RoleName } from "@prisma/client";
+const AuthTokenType = Object.freeze({
+  EMAIL_VERIFICATION: "EMAIL_VERIFICATION",
+  PASSWORD_RESET: "PASSWORD_RESET",
+});
+const RoleName = Object.freeze({ STUDENT: "STUDENT" });
 import { prisma } from "../prisma.js";
 import { env } from "../config/env.js";
 import { hashToken, opaqueToken } from "../utils/crypto.js";
