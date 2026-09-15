@@ -1,0 +1,37 @@
+name: Automate Docker Build
+
+# 1. Trigger the workflow on every push to the main branch
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 2. Check out the repository code
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 3. Set up Docker Buildx (enables advanced build features)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # 4. Authenticate with Docker Hub using the secrets created in Step 2
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 5. Build the image and push it to Docker Hub
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        # Replace 'your-dockerhub-username/your-repo-name' with your actual details
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/your-repo-name:latest
+          ${{ secrets.DOCKER_USERNAME }}/your-repo-name:${{ github.sha }}
