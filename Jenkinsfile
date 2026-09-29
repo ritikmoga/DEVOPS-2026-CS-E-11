@@ -26,7 +26,7 @@ pipeline {
     parameters {
         string(
             name: 'REPORT_EMAIL',
-            defaultValue: 'sumit.kumar@skit.ac.in, ritikmoga13@gmail.com',
+            defaultValue: 'ritikmoga13@gmail.com',
             trim: true,
             description: 'Comma-separated recipients for the Jenkins frontend report'
         )
