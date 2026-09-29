@@ -1,0 +1,15 @@
+.git
+.github
+.vscode
+node_modules
+server/node_modules
+frontend/**/node_modules
+frontend/**/dist
+server/logs
+reports
+*.log
+.env
+server/.env
+DEVOPS-2026-CS-E-11
+*.pdf
+__pycache__

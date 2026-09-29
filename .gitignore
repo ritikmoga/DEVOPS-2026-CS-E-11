@@ -1,10 +1,12 @@
-# Runtime and generated data
-logs/
-
-# Local secrets and dependencies
-server/.env
-server/node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.matplotlib-cache/
+.pytest_cache/
 node_modules/
-
-# Frontend build output and TypeScript incremental state
-frontend/**/dist/
+dist/
+.env
+.env.*
+!.env.example
+.ci-fix-worktree/

@@ -1,0 +1,3 @@
+# Dependencies for generate_report.py
+matplotlib>=3.9,<4
+reportlab>=4.0,<5
