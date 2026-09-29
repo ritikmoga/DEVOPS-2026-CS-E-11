@@ -1,2 +1,0 @@
-# Generated for Prisma Migrate. Do not edit this provider after migrations are applied.
-provider = "postgresql"

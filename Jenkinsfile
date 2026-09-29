@@ -122,7 +122,7 @@ pipeline {
                 expression { env.REPORT_ONLY_COMMIT != 'true' }
             }
             steps {
-                withEnv(['DATABASE_URL=postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public']) {
+                withEnv(['DATABASE_URL=mongodb://eventhub:eventhub@127.0.0.1:27017/ci_validation?replicaSet=rs0']) {
                     script {
                         if (isUnix()) {
                             sh 'npm run verify --prefix server'

@@ -1,11 +1,11 @@
-import { PrismaClient } from "@prisma/client";
 import { env } from "./config/env.js";
+import { createPrismaClient } from "./prisma-client.js";
 
 const globalForPrisma = globalThis;
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
+  createPrismaClient({
     log: env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 
