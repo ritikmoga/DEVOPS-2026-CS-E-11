@@ -5,7 +5,7 @@ const schema = z.object({
   PORT: z.coerce.number().default(5000),
   DATABASE_URL: z
     .string()
-    .default("postgresql://eventhub:eventhub@localhost:5432/event_management?schema=public"),
+    .default("mongodb://eventhub:eventhub@localhost:27017/event_management?replicaSet=rs0"),
   JWT_ACCESS_SECRET: z.string().min(32).default("development-access-secret-change-me"),
   JWT_REFRESH_SECRET: z.string().min(32).default("development-refresh-secret-change-me"),
   ACCESS_TOKEN_EXPIRES_IN: z.string().default("15m"),

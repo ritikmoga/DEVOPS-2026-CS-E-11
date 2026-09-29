@@ -739,7 +739,7 @@ async function renderAnalytics() {
           <span class="signal-dot blue"></span>
           <div>
             <strong>Capacity safety</strong>
-            <p>Registration allocation is transactionally serialized in PostgreSQL.</p>
+            <p>Registration allocation is transactionally serialized in MongoDB.</p>
           </div>
         </div>
       </section>
@@ -851,11 +851,11 @@ function renderSettings() {
         </div>
       </section>
       <section class="panel">
-        ${panelTitle("DATABASE", "PostgreSQL storage")}
+        ${panelTitle("DATABASE", "MongoDB storage")}
         <div class="setting-row">
           <div>
-            <strong>Relational data</strong>
-            <p>Users, events, registrations and audit records use PostgreSQL through Prisma.</p>
+            <strong>Document data</strong>
+            <p>Users, events, registrations and audit records use MongoDB through Prisma.</p>
           </div>
           ${status("CONFIGURED")}
         </div>

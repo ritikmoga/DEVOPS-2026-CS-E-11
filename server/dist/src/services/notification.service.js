@@ -2,7 +2,17 @@ import { prisma } from "../prisma.js";
 export async function notifyUsers(userIds, type, title, message) {
   if (!userIds.length) return;
   await prisma.notification.create({
-    data: { type, title, message, recipients: { create: userIds.map((userId) => ({ userId })) } },
+    // `readAt`/`deliveredAt` are written explicitly because MongoDB stores an
+    // omitted field as absent, and Prisma's `where: { readAt: null }` filter
+    // does not match absent fields. See dist/src/prisma-client.js.
+    data: {
+      type,
+      title,
+      message,
+      recipients: {
+        create: userIds.map((userId) => ({ userId, readAt: null, deliveredAt: null })),
+      },
+    },
   });
 }
 export async function listNotifications(userId, page, limit) {

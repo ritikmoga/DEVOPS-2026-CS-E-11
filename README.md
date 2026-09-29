@@ -18,11 +18,11 @@ The platform is built using a lightweight web stack with a clear separation betw
 * 🏆 **Certificate Management**
 * 🔐 **Administrative Operations Console**
 * 📡 **REST API with Express**
-* 🗄️ **PostgreSQL Database**
+* 🗄️ **MongoDB Database**
 * 🔄 **Prisma ORM**
 * 🧩 **jQuery-powered DOM and AJAX interactions**
 * 📦 **JSON-based configuration**
-* 🐳 **Docker-based PostgreSQL setup**
+* 🐳 **Docker-based MongoDB replica-set setup**
 
 ---
 
@@ -35,7 +35,7 @@ The platform is built using a lightweight web stack with a clear separation betw
 | 🔄 DOM & AJAX       | jQuery             |
 | 📦 Configuration    | JSON               |
 | 🖥️ Backend         | Node.js + Express  |
-| 🗄️ Database        | PostgreSQL         |
+| 🗄️ Database        | MongoDB            |
 | 🔷 ORM              | Prisma             |
 | 🐳 Local Database   | Docker Compose     |
 
@@ -52,7 +52,7 @@ EventHub
 │
 ├── server/                 # Express REST API
 │
-├── compose.yaml            # PostgreSQL Docker configuration
+├── compose.yaml            # MongoDB Docker configuration (single-node replica set)
 │
 ├── docs/
 │   └── PROJECT_WALKTHROUGH.md
@@ -67,7 +67,7 @@ EventHub
 | 🌐 Public EventHub Site      | `frontend/public-client` | `5173` |
 | 🛡️ Admin Operations Console | `frontend/admin-client`  | `5174` |
 | ⚙️ Express API               | `server`                 | `5000` |
-| 🐘 PostgreSQL                | `compose.yaml`           | `5432` |
+| 🍃 MongoDB                 | `compose.yaml`           | `27017` |
 
 ---
 
@@ -83,12 +83,12 @@ npm run install:all
 
 ---
 
-## 2️⃣ Start PostgreSQL
+## 2️⃣ Start MongoDB
 
-Start the PostgreSQL container using Docker Compose:
+Start MongoDB using Docker Compose. MongoDB runs as a single-node replica set because the API uses multi-document transactions, which require a replica set:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d mongodb mongodb-init
 ```
 
 Verify that the database container is running before continuing.
@@ -126,10 +126,10 @@ After configuring the credentials, seed the database.
 
 ## 4️⃣ Initialize the Database
 
-Run the database migration:
+Push the Prisma schema to MongoDB (MongoDB has no SQL migration history):
 
 ```bash
-npm run db:migrate
+npm run db:push
 ```
 
 Seed the database:
@@ -212,7 +212,7 @@ The project includes:
 * ❌ No fake analytics
 * ❌ No mock API responses
 
-All application data is intended to originate from the configured PostgreSQL database and API layer.
+All application data is intended to originate from the configured MongoDB database and API layer.
 
 ---
 
@@ -273,11 +273,11 @@ Instead of managing registrations, attendance, proofs, and certificates across d
 # Install
 npm run install:all
 
-# Start PostgreSQL
-docker compose up -d postgres
+# Start MongoDB
+docker compose up -d mongodb mongodb-init
 
 # Database
-npm run db:migrate
+npm run db:push
 npm run db:seed
 npm run db:verify
 

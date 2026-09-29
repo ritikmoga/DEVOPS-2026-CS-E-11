@@ -1,3 +1,17 @@
+// EventHub Prisma schema — MongoDB connector.
+//
+// MongoDB notes for maintainers:
+//   * Prisma's MongoDB connector has no enums, so every status/role field is a
+//     plain `String` constrained by a zod schema in the API layer. The accepted
+//     values are mirrored as `Object.freeze` constants in `dist/src`.
+//   * `_id` is an ObjectId, so every model maps its `id` onto `_id` and every
+//     relation scalar carries `@db.ObjectId`.
+//   * Scalar lists are unsupported, so `Event.tags` is stored as `Json`.
+//   * MongoDB has no SQL migrations. Apply schema changes with
+//     `npm run prisma:push` (`prisma db push`), never `prisma migrate`.
+//   * `$transaction` requires a replica set; `compose.yaml` starts a single
+//     node replica set for local development and tests.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,133 +21,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RoleName {
-  STUDENT
-  USER
-  CHECKIN_STAFF
-  EVENT_COORDINATOR
-  FACULTY
-  ORGANIZER
-  ADMIN
-  SUPER_ADMIN
-}
-
-enum EventMode {
-  ONLINE
-  OFFLINE
-  HYBRID
-}
-
-enum RegistrationType {
-  INDIVIDUAL
-  TEAM
-}
-
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  REGISTRATION_CLOSED
-  ONGOING
-  COMPLETED
-  CANCELLED
-  ARCHIVED
-}
-
-enum RegistrationStatus {
-  PENDING
-  CONFIRMED
-  WAITLISTED
-  REJECTED
-  CANCELLED
-  CHECKED_IN
-  CHECKED_OUT
-  COMPLETED
-}
-
-enum TicketStatus {
-  ACTIVE
-  REVOKED
-  USED
-}
-
-enum AttendanceStatus {
-  NOT_MARKED
-  CHECKED_IN
-  CHECKED_OUT
-  PRESENT
-  INCOMPLETE
-  ABSENT
-  MANUAL_OVERRIDE
-}
-
-enum CheckInMethod {
-  QR
-  MANUAL
-}
-
-enum TeamStatus {
-  FORMING
-  CONFIRMED
-  CANCELLED
-}
-
-enum TeamMemberRole {
-  LEADER
-  MEMBER
-}
-
-enum ProofType {
-  ATTENDANCE_PHOTO
-  CERTIFICATE
-  EVENT_TICKET
-  RESULT_SHEET
-  ORGANIZER_LETTER
-  OTHER
-}
-
-enum ProofStatus {
-  PENDING
-  VERIFIED
-  REJECTED
-  FLAGGED
-  DUPLICATE
-}
-
-enum CertificateStatus {
-  ISSUED
-  REVOKED
-}
-
-enum NotificationType {
-  REGISTRATION_CONFIRMED
-  REGISTRATION_REJECTED
-  WAITLIST_PROMOTED
-  PROOF_FLAGGED
-  EVENT_REMINDER
-  EVENT_CANCELLED
-  EVENT_RESCHEDULED
-  CERTIFICATE_AVAILABLE
-  SYSTEM
-}
-
-enum NotificationChannel {
-  IN_APP
-  EMAIL
-}
-
-enum FileVisibility {
-  PUBLIC
-  PRIVATE
-}
-
-enum AuthTokenType {
-  EMAIL_VERIFICATION
-  PASSWORD_RESET
-}
-
 model User {
-  id                   String                  @id @default(uuid())
-  email                String                  @unique
+  id                   String               @id @default(auto()) @map("_id") @db.ObjectId
+  email                String               @unique
   passwordHash         String
   fullName             String
   phone                String?
@@ -143,47 +33,47 @@ model User {
   year                 Int?
   enrollmentNumber     String?
   emailVerifiedAt      DateTime?
-  isActive             Boolean                 @default(true)
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
   roles                UserRole[]
   sessions             Session[]
   authTokens           AuthToken[]
-  createdEvents        Event[]                 @relation("EventCreatedBy")
-  registrations        Registration[]          @relation("UserRegistrations")
+  createdEvents        Event[]              @relation("EventCreatedBy")
+  registrations        Registration[]       @relation("UserRegistrations")
   proofs               Proof[]
   certificates         Certificate[]
   notificationReceipts NotificationRecipient[]
   auditLogs            AuditLog[]
-  verifiedAttendance   Attendance[]            @relation("AttendanceVerifiedBy")
-  uploadedFiles        FileRecord[]            @relation("FileUploadedBy")
+  verifiedAttendance   Attendance[]         @relation("AttendanceVerifiedBy")
+  uploadedFiles        FileRecord[]         @relation("FileUploadedBy")
   uploadedDocuments    EventDocument[]
   teamMemberships      TeamMember[]
-  attendanceRecords    Attendance[]            @relation("AttendanceParticipant")
+  attendanceRecords    Attendance[]         @relation("AttendanceParticipant")
 
   @@index([enrollmentNumber])
 }
 
 model Role {
-  id          String           @id @default(uuid())
-  name        RoleName         @unique
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  name        String           @unique
   description String?
   users       UserRole[]
   permissions RolePermission[]
 }
 
 model Permission {
-  id          String           @id @default(uuid())
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
   code        String           @unique
   description String?
   roles       RolePermission[]
 }
 
 model UserRole {
-  id     String @id @default(uuid())
-  userId String
-  roleId String
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  roleId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
   role   Role   @relation(fields: [roleId], references: [id])
 
@@ -192,9 +82,9 @@ model UserRole {
 }
 
 model RolePermission {
-  id           String     @id @default(uuid())
-  roleId       String
-  permissionId String
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  roleId       String     @db.ObjectId
+  permissionId String     @db.ObjectId
   role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
 
@@ -203,8 +93,8 @@ model RolePermission {
 }
 
 model Session {
-  id               String    @id @default(uuid())
-  userId           String
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
   refreshTokenHash String
   userAgent        String?
   ipAddress        String?
@@ -218,28 +108,28 @@ model Session {
 }
 
 model AuthToken {
-  id        String        @id @default(uuid())
-  userId    String
-  tokenHash String        @unique
-  type      AuthTokenType
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  tokenHash String   @unique
+  type      String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime      @default(now())
-  user      User          @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, type])
   @@index([expiresAt])
 }
 
 model EventCategory {
-  id          String  @id @default(uuid())
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String  @unique
   description String?
   events      Event[]
 }
 
 model Organizer {
-  id           String   @id @default(uuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   contactEmail String?
   contactPhone String?
@@ -249,14 +139,14 @@ model Organizer {
 }
 
 model Event {
-  id                          String           @id @default(uuid())
+  id                          String         @id @default(auto()) @map("_id") @db.ObjectId
   title                       String
-  slug                        String           @unique
+  slug                        String         @unique
   shortDescription            String
   description                 String
-  categoryId                  String?
-  organizerId                 String?
-  mode                        EventMode        @default(OFFLINE)
+  categoryId                  String?        @db.ObjectId
+  organizerId                 String?        @db.ObjectId
+  mode                        String         @default("OFFLINE")
   bannerUrl                   String?
   bannerStorageKey            String?
   venueName                   String?
@@ -271,30 +161,31 @@ model Event {
   registrationStartAt         DateTime
   registrationEndAt           DateTime
   capacity                    Int
-  confirmedCount              Int              @default(0)
-  registrationType            RegistrationType @default(INDIVIDUAL)
-  approvalRequired            Boolean          @default(false)
-  waitlistEnabled             Boolean          @default(true)
+  confirmedCount              Int            @default(0)
+  registrationType            String         @default("INDIVIDUAL")
+  approvalRequired            Boolean        @default(false)
+  waitlistEnabled             Boolean        @default(true)
   minTeamSize                 Int?
   maxTeamSize                 Int?
-  attendanceEnabled           Boolean          @default(true)
-  minimumAttendancePercentage Float            @default(75)
-  certificateEnabled          Boolean          @default(true)
+  attendanceEnabled           Boolean        @default(true)
+  minimumAttendancePercentage Float          @default(75)
+  certificateEnabled          Boolean        @default(true)
   rules                       Json?
   schedule                    Json?
   speakers                    Json?
   prizes                      Json?
   contactDetails              Json?
-  tags                        String[]         @default([])
-  status                      EventStatus      @default(DRAFT)
-  createdById                 String
+  // MongoDB has no scalar list type; tags are persisted as a JSON array.
+  tags                        Json?
+  status                      String         @default("DRAFT")
+  createdById                 String         @db.ObjectId
   publishedAt                 DateTime?
-  createdAt                   DateTime         @default(now())
-  updatedAt                   DateTime         @updatedAt
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
   deletedAt                   DateTime?
-  category                    EventCategory?   @relation(fields: [categoryId], references: [id])
-  organizer                   Organizer?       @relation(fields: [organizerId], references: [id])
-  createdBy                   User             @relation("EventCreatedBy", fields: [createdById], references: [id])
+  category                    EventCategory? @relation(fields: [categoryId], references: [id])
+  organizer                   Organizer?     @relation(fields: [organizerId], references: [id])
+  createdBy                   User           @relation("EventCreatedBy", fields: [createdById], references: [id])
   documents                   EventDocument[]
   registrations               Registration[]
   teams                       Team[]
@@ -309,14 +200,14 @@ model Event {
 }
 
 model EventDocument {
-  id           String   @id @default(uuid())
-  eventId      String
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventId      String   @db.ObjectId
   name         String
   storageKey   String
   url          String
   mimeType     String
   fileSize     Int
-  uploadedById String
+  uploadedById String   @db.ObjectId
   createdAt    DateTime @default(now())
   event        Event    @relation(fields: [eventId], references: [id])
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
@@ -325,17 +216,17 @@ model EventDocument {
 }
 
 model Registration {
-  id                 String               @id @default(uuid())
-  eventId            String
-  userId             String
-  registrationNumber String               @unique
-  status             RegistrationStatus   @default(PENDING)
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  eventId            String              @db.ObjectId
+  userId             String              @db.ObjectId
+  registrationNumber String              @unique
+  status             String              @default("PENDING")
   customFormAnswers  Json?
-  registeredAt       DateTime             @default(now())
+  registeredAt       DateTime            @default(now())
   confirmedAt        DateTime?
   cancelledAt        DateTime?
-  event              Event                @relation(fields: [eventId], references: [id])
-  user               User                 @relation("UserRegistrations", fields: [userId], references: [id])
+  event              Event               @relation(fields: [eventId], references: [id])
+  user               User                @relation("UserRegistrations", fields: [userId], references: [id])
   answers            RegistrationAnswer[]
   ticket             Ticket?
   attendance         Attendance?
@@ -347,8 +238,8 @@ model Registration {
 }
 
 model RegistrationAnswer {
-  id             String       @id @default(uuid())
-  registrationId String
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  registrationId String       @db.ObjectId
   fieldKey       String
   value          Json
   registration   Registration @relation(fields: [registrationId], references: [id])
@@ -357,12 +248,12 @@ model RegistrationAnswer {
 }
 
 model Team {
-  id         String       @id @default(uuid())
-  eventId    String
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  eventId    String       @db.ObjectId
   name       String
-  leaderId   String
+  leaderId   String       @db.ObjectId
   inviteCode String       @unique
-  status     TeamStatus   @default(FORMING)
+  status     String       @default("FORMING")
   createdAt  DateTime     @default(now())
   event      Event        @relation(fields: [eventId], references: [id])
   members    TeamMember[]
@@ -371,94 +262,94 @@ model Team {
 }
 
 model TeamMember {
-  id       String         @id @default(uuid())
-  teamId   String
-  userId   String
-  role     TeamMemberRole @default(MEMBER)
-  joinedAt DateTime       @default(now())
-  team     Team           @relation(fields: [teamId], references: [id])
-  user     User           @relation(fields: [userId], references: [id])
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  teamId   String   @db.ObjectId
+  userId   String   @db.ObjectId
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  team     Team     @relation(fields: [teamId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([teamId, userId])
   @@index([userId])
 }
 
 model Ticket {
-  id             String       @id @default(uuid())
-  registrationId String       @unique
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  registrationId String       @unique @db.ObjectId
   tokenHash      String       @unique
   nonce          String       @unique
   issuedAt       DateTime     @default(now())
   expiresAt      DateTime?
   revokedAt      DateTime?
-  status         TicketStatus @default(ACTIVE)
+  status         String       @default("ACTIVE")
   registration   Registration @relation(fields: [registrationId], references: [id])
 }
 
 model Attendance {
-  id                   String           @id @default(uuid())
-  eventId              String
-  registrationId       String           @unique
-  userId               String
+  id                   String       @id @default(auto()) @map("_id") @db.ObjectId
+  eventId              String       @db.ObjectId
+  registrationId       String       @unique @db.ObjectId
+  userId               String       @db.ObjectId
   checkInAt            DateTime?
   checkOutAt           DateTime?
   attendanceMinutes    Int?
   attendancePercentage Float?
-  status               AttendanceStatus @default(NOT_MARKED)
-  checkInMethod        CheckInMethod?
-  checkOutMethod       CheckInMethod?
-  verifiedById         String?
+  status               String       @default("NOT_MARKED")
+  checkInMethod        String?
+  checkOutMethod       String?
+  verifiedById         String?      @db.ObjectId
   overrideReason       String?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-  event                Event            @relation(fields: [eventId], references: [id])
-  registration         Registration     @relation(fields: [registrationId], references: [id])
-  user                 User             @relation("AttendanceParticipant", fields: [userId], references: [id])
-  verifiedBy           User?            @relation("AttendanceVerifiedBy", fields: [verifiedById], references: [id])
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  event                Event        @relation(fields: [eventId], references: [id])
+  registration         Registration @relation(fields: [registrationId], references: [id])
+  user                 User         @relation("AttendanceParticipant", fields: [userId], references: [id])
+  verifiedBy           User?        @relation("AttendanceVerifiedBy", fields: [verifiedById], references: [id])
 
   @@index([eventId, status])
   @@index([userId])
 }
 
 model Proof {
-  id                   String      @id @default(uuid())
-  userId               String
-  eventId              String
-  type                 ProofType
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @db.ObjectId
+  eventId              String   @db.ObjectId
+  type                 String
   storageKey           String
   url                  String
   originalFileName     String
   mimeType             String
   fileSize             Int
   checksum             String
-  uploadedAt           DateTime    @default(now())
-  verificationStatus   ProofStatus @default(PENDING)
+  uploadedAt           DateTime @default(now())
+  verificationStatus   String   @default("PENDING")
   verificationScore    Float?
   verificationMetadata Json?
-  reviewedById         String?
+  reviewedById         String?  @db.ObjectId
   reviewedAt           DateTime?
-  user                 User        @relation(fields: [userId], references: [id])
-  event                Event       @relation(fields: [eventId], references: [id])
+  user                 User     @relation(fields: [userId], references: [id])
+  event                Event    @relation(fields: [eventId], references: [id])
 
   @@index([eventId, verificationStatus])
   @@index([checksum])
 }
 
 model Certificate {
-  id                String            @id @default(uuid())
-  certificateNumber String            @unique
-  eventId           String
-  userId            String
-  registrationId    String?
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  certificateNumber String        @unique
+  eventId           String        @db.ObjectId
+  userId            String        @db.ObjectId
+  registrationId    String?       @db.ObjectId
   storageKey        String
   certificateUrl    String
-  verificationToken String            @unique
-  issuedAt          DateTime          @default(now())
+  verificationToken String        @unique
+  issuedAt          DateTime      @default(now())
   revokedAt         DateTime?
-  status            CertificateStatus @default(ISSUED)
-  event             Event             @relation(fields: [eventId], references: [id])
-  user              User              @relation(fields: [userId], references: [id])
-  registration      Registration?     @relation(fields: [registrationId], references: [id])
+  status            String        @default("ISSUED")
+  event             Event         @relation(fields: [eventId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  registration      Registration? @relation(fields: [registrationId], references: [id])
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -466,12 +357,12 @@ model Certificate {
 }
 
 model Notification {
-  id         String                  @id @default(uuid())
-  type       NotificationType
+  id         String                  @id @default(auto()) @map("_id") @db.ObjectId
+  type       String
   title      String
   message    String
-  channel    NotificationChannel     @default(IN_APP)
-  eventId    String?
+  channel    String                  @default("IN_APP")
+  eventId    String?                 @db.ObjectId
   createdAt  DateTime                @default(now())
   recipients NotificationRecipient[]
 
@@ -479,9 +370,9 @@ model Notification {
 }
 
 model NotificationRecipient {
-  id             String       @id @default(uuid())
-  notificationId String
-  userId         String
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  notificationId String       @db.ObjectId
+  userId         String       @db.ObjectId
   readAt         DateTime?
   deliveredAt    DateTime?
   notification   Notification @relation(fields: [notificationId], references: [id])
@@ -492,8 +383,8 @@ model NotificationRecipient {
 }
 
 model AuditLog {
-  id           String   @id @default(uuid())
-  actorId      String?
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  actorId      String?  @db.ObjectId
   action       String
   resourceType String
   resourceId   String?
@@ -511,23 +402,23 @@ model AuditLog {
 }
 
 model FileRecord {
-  id           String         @id @default(uuid())
-  objectKey    String         @unique
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  objectKey    String   @unique
   url          String
   originalName String
   mimeType     String
   fileSize     Int
   checksum     String
-  visibility   FileVisibility @default(PRIVATE)
-  uploadedById String
-  uploadedAt   DateTime       @default(now())
-  uploadedBy   User           @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+  visibility   String   @default("PRIVATE")
+  uploadedById String   @db.ObjectId
+  uploadedAt   DateTime @default(now())
+  uploadedBy   User     @relation("FileUploadedBy", fields: [uploadedById], references: [id])
 
   @@index([checksum])
 }
 
 model SystemSetting {
-  id          String   @id @default(uuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   key         String   @unique
   value       Json
   description String?
@@ -535,9 +426,8 @@ model SystemSetting {
 }
 
 model SequenceCounter {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   key       String   @unique
   value     Int      @default(0)
   updatedAt DateTime @updatedAt
 }
-

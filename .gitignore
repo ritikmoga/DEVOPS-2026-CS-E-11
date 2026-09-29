@@ -5,8 +5,15 @@ __pycache__/
 .matplotlib-cache/
 .pytest_cache/
 node_modules/
-dist/
+# Vite build output only. `server/dist` is committed application source in this
+# repository, so a bare `dist/` rule would silently exclude new backend files.
+frontend/*/dist/
 .env
 .env.*
 !.env.example
 .ci-fix-worktree/
+
+# Runtime logs and audit trails can contain personal data
+server/logs/
+*.jsonl
+*.log

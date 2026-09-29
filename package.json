@@ -13,7 +13,7 @@
     "dev:admin": "npm run dev --prefix frontend/admin-client",
     "start:api": "npm start --prefix server",
 
-    "db:migrate": "npm run prisma:migrate --prefix server",
+    "db:push": "npm run prisma:push --prefix server",
     "db:seed": "npm run seed --prefix server",
     "db:verify": "npm run db:verify --prefix server",
 
