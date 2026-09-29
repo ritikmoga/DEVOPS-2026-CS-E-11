@@ -26,7 +26,7 @@ pipeline {
     parameters {
         string(
             name: 'REPORT_EMAIL',
-            defaultValue: 'sumit.kumar@skit.ac.in, ritikmoga13@gmail.com',
+            defaultValue: 'ritikmoga13@gmail.com',
             trim: true,
             description: 'Comma-separated recipients for the Jenkins frontend report'
         )
@@ -141,7 +141,15 @@ pipeline {
             steps {
                 script {
                     if (fileExists('reports/frontend-test-report.md')) {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                        // Publishing the report is a notification, not a verification
+                        // gate. `main` moves between the checkout and this push (the
+                        // hourly poll, the GitHub Actions jobs, and this job's own
+                        // earlier report commits all write to it), so a plain push is
+                        // regularly rejected as non-fast-forward. Marking the build
+                        // UNSTABLE for that reported a green verification as broken, so
+                        // failures are reported as warnings and the build keeps the
+                        // result its checks actually produced.
+                        catchError(buildResult: null, stageResult: null) {
                             withCredentials([
                                 usernamePassword(
                                     credentialsId: 'github-auth',
@@ -158,7 +166,9 @@ pipeline {
                                         git add reports/frontend-test-report.md reports/frontend-junit.xml
                                         if git diff --cached --quiet; then exit 0; fi
                                         git commit -m '[skip ci] ci: publish frontend test report'
-                                        git push https://\$GITHUB_USERNAME:\$GITHUB_TOKEN@github.com/ritikmoga/DEVOPS-2026-CS-E-11.git HEAD:${reportBranch}
+                                        git fetch origin ${reportBranch}
+                                        git rebase FETCH_HEAD || { git rebase --abort; echo 'Report rebase conflicted; leaving the report for the next build.'; exit 0; }
+                                        git push https://\$GITHUB_USERNAME:\$GITHUB_TOKEN@github.com/ritikmoga/DEVOPS-2026-CS-E-11.git HEAD:${reportBranch} || echo 'Report push was rejected; the verification result is unaffected.'
                                     """
                                 } else {
                                     bat """
@@ -169,7 +179,15 @@ pipeline {
                                         git diff --cached --quiet
                                         if %ERRORLEVEL% EQU 0 exit /b 0
                                         git commit -m "[skip ci] ci: publish frontend test report"
+                                        git fetch origin ${reportBranch}
+                                        git rebase FETCH_HEAD
+                                        if %ERRORLEVEL% NEQ 0 (
+                                            git rebase --abort
+                                            echo Report rebase conflicted; leaving the report for the next build.
+                                            exit /b 0
+                                        )
                                         git push https://%GITHUB_USERNAME%:%GITHUB_TOKEN%@github.com/ritikmoga/DEVOPS-2026-CS-E-11.git HEAD:${reportBranch}
+                                        if %ERRORLEVEL% NEQ 0 echo Report push was rejected; the verification result is unaffected.
                                     """
                                 }
                             }
