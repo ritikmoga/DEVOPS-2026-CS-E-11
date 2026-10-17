@@ -80,7 +80,7 @@ async function smokeTestHealthEndpoint() {
       ...process.env,
       NODE_ENV: "test",
       PORT: String(port),
-      DATABASE_URL: "postgresql://eventhub:eventhub@127.0.0.1:5432/ci_health_check?schema=public",
+      DATABASE_URL: "mongodb://eventhub:eventhub@127.0.0.1:27017/ci_health_check?replicaSet=rs0",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });

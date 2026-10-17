@@ -1,7 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { AuthTokenType, RoleName } from "@prisma/client";
+const AuthTokenType = Object.freeze({
+  EMAIL_VERIFICATION: "EMAIL_VERIFICATION",
+  PASSWORD_RESET: "PASSWORD_RESET",
+});
+const RoleName = Object.freeze({ STUDENT: "STUDENT" });
 import { prisma } from "../prisma.js";
+import { withTransaction } from "../prisma-client.js";
 import { env } from "../config/env.js";
 import { hashToken, opaqueToken } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";
@@ -47,7 +52,7 @@ export async function register(input) {
   const passwordHash = await bcrypt.hash(input.password, 12);
   const verificationToken = opaqueToken();
   const { password: _password, ...profile } = input;
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await withTransaction(prisma, async (tx) => {
     const created = await tx.user.create({
       data: {
         ...profile,
@@ -130,7 +135,7 @@ export async function refresh(refreshToken, metadata) {
   if (!session || !session.user.isActive || session.user.deletedAt)
     throw new AppError("Refresh token is invalid or revoked", 401, "INVALID_REFRESH_TOKEN");
   const nextRefresh = opaqueToken(48);
-  const nextSession = await prisma.$transaction(async (tx) => {
+  const nextSession = await withTransaction(prisma, async (tx) => {
     await tx.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
     return tx.session.create({
       data: {

@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { withTransaction } from "../prisma-client.js";
 import { hashToken } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";
 function distanceMeters(lat1, lon1, lat2, lon2) {
@@ -91,7 +92,7 @@ export async function checkIn(token, actorId, eventId, location) {
   )
     throw new AppError("Event is not currently active", 409, "EVENT_NOT_ACTIVE");
   validateLocation(event, location);
-  const attendance = await prisma.$transaction(async (tx) => {
+  const attendance = await withTransaction(prisma, async (tx) => {
     const existing = await tx.attendance.findUnique({
       where: { registrationId: ticket.registrationId },
     });
@@ -140,7 +141,7 @@ export async function checkOut(token, actorId, eventId, location) {
   );
   const percentage = Math.min(100, Number(((minutes / totalEventMinutes) * 100).toFixed(2)));
   const status = percentage >= Number(event.minimumAttendancePercentage) ? "PRESENT" : "INCOMPLETE";
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await withTransaction(prisma, async (tx) => {
     const row = await tx.attendance.update({
       where: { id: attendance.id },
       data: {

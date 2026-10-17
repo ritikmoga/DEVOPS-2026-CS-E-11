@@ -1,7 +1,40 @@
 import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { EventStatus, ProofStatus, ProofType, RegistrationStatus } from "@prisma/client";
+const EventStatus = Object.freeze({
+  DRAFT: "DRAFT",
+  PUBLISHED: "PUBLISHED",
+  REGISTRATION_CLOSED: "REGISTRATION_CLOSED",
+  ONGOING: "ONGOING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  ARCHIVED: "ARCHIVED",
+});
+const ProofStatus = Object.freeze({
+  PENDING: "PENDING",
+  VERIFIED: "VERIFIED",
+  REJECTED: "REJECTED",
+  FLAGGED: "FLAGGED",
+  DUPLICATE: "DUPLICATE",
+});
+const ProofType = Object.freeze({
+  ATTENDANCE_PHOTO: "ATTENDANCE_PHOTO",
+  CERTIFICATE: "CERTIFICATE",
+  EVENT_TICKET: "EVENT_TICKET",
+  RESULT_SHEET: "RESULT_SHEET",
+  ORGANIZER_LETTER: "ORGANIZER_LETTER",
+  OTHER: "OTHER",
+});
+const RegistrationStatus = Object.freeze({
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  WAITLISTED: "WAITLISTED",
+  REJECTED: "REJECTED",
+  CANCELLED: "CANCELLED",
+  CHECKED_IN: "CHECKED_IN",
+  CHECKED_OUT: "CHECKED_OUT",
+  COMPLETED: "COMPLETED",
+});
 import { prisma } from "../prisma.js";
 import { env } from "../config/env.js";
 import { requireAuth, requirePermission } from "../middleware/auth.js";

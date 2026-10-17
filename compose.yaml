@@ -1,21 +1,97 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: eventhub-postgres
+  # MongoDB is started as a single-node replica set because Prisma's MongoDB
+  # connector only allows `$transaction` when the deployment is a replica set.
+  #
+  # Enabling `--replSet` together with authentication makes MongoDB require a
+  # shared `security.keyFile` for internal member authentication, so the
+  # container generates one on first boot instead of committing a key to git.
+  mongodb:
+    image: mongo:7
+    container_name: eventhub-mongodb
     restart: unless-stopped
     environment:
-      POSTGRES_DB: event_management
-      POSTGRES_USER: eventhub
-      POSTGRES_PASSWORD: eventhub
+      MONGO_INITDB_ROOT_USERNAME: eventhub
+      MONGO_INITDB_ROOT_PASSWORD: eventhub
+      MONGO_INITDB_DATABASE: event_management
     ports:
-      - "${EVENTHUB_POSTGRES_PORT:-5432}:5432"
+      - "${EVENTHUB_MONGODB_PORT:-27017}:27017"
     volumes:
-      - eventhub_postgres_data:/var/lib/postgresql/data
+      - eventhub_mongodb_data:/data/db
+      - eventhub_mongodb_keyfile:/etc/mongo-keys
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -euo pipefail
+        keyfile=/etc/mongo-keys/rs0.key
+        if [ ! -s "$$keyfile" ]; then
+          head -c 756 /dev/urandom | base64 > "$$keyfile"
+        fi
+        chown mongodb:mongodb "$$keyfile"
+        chmod 400 "$$keyfile"
+        exec docker-entrypoint.sh mongod \
+          --replSet rs0 \
+          --bind_ip_all \
+          --keyFile "$$keyfile"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eventhub -d event_management"]
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --username
+        - eventhub
+        - --password
+        - eventhub
+        - --authenticationDatabase
+        - admin
+        - --eval
+        - db.adminCommand('ping').ok
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 20s
+
+  # Runs once after mongod is healthy. It initiates the `rs0` replica set and
+  # grants the application user access to the `event_management` database.
+  #
+  # The member host is published as `localhost:27017` because the API is started
+  # on the host with `npm start`. That is why this service connects with
+  # `directConnection=true`: a replica-set aware client would otherwise try to
+  # reach the member through `localhost` from inside this container.
+  mongodb-init:
+    image: mongo:7
+    container_name: eventhub-mongodb-init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -euo pipefail
+        uri='mongodb://eventhub:eventhub@mongodb:27017/?authSource=admin&directConnection=true'
+        mongosh "$$uri" --quiet --eval '
+          try {
+            rs.status();
+          } catch (error) {
+            rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "localhost:27017" }],
+            });
+          }
+        '
+        mongosh "$$uri" --quiet --eval '
+          const app = db.getSiblingDB("event_management");
+          if (!app.getUser("eventhub")) {
+            app.createUser({
+              user: "eventhub",
+              pwd: "eventhub",
+              roles: [{ role: "readWrite", db: "event_management" }],
+            });
+          }
+        '
 
 volumes:
-  eventhub_postgres_data:
+  eventhub_mongodb_data:
+  eventhub_mongodb_keyfile:

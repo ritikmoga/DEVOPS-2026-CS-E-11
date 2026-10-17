@@ -16,11 +16,15 @@ It creates a JUnit XML report and a Markdown report. Jenkins archives the report
 4. Create a Jenkins username/password credential with ID `github-auth`, using a GitHub username and token with commit-status permission. Configure the GitHub repository webhook to send push events to `https://YOUR_JENKINS_URL/github-webhook/` with JSON delivery and enable the job's GitHub hook trigger.
 5. Use an agent with Node.js/npm installed. Node.js 20 or newer is recommended.
 
-The pipeline parameter `REPORT_EMAIL` defaults to `sumit.kumar@skit.ac.in, ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the GitHub `main` branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop. The GitHub commit status context is `jenkins/full-stack` and includes backend verification.
+The pipeline parameter `REPORT_EMAIL` defaults to `ritikmoga13@gmail.com` and can be changed when starting a build. Every normal test build emails the Markdown and JUnit reports and commits both files under `reports/` on the GitHub `main` branch. The report commit uses `[skip ci]` and is excluded from test execution to prevent a report/CI loop. The GitHub commit status context is `jenkins/full-stack` and includes backend verification.
 
 The `github-auth` credential must also allow repository contents write access because Jenkins publishes the generated reports back to GitHub. Commit-status permission is still required for the Jenkins status update.
 
 The Jenkinsfile starts builds immediately through `githubPush()` when a GitHub push webhook is delivered, and polls the GitHub `main` branch every minute (`H/1 * * * *`) as a fallback. Instant GitHub webhooks require a public Jenkins URL; a `localhost` or LAN-only URL cannot receive requests from GitHub. In a Multibranch Pipeline, ensure GitHub Branch Source webhook/scanning is enabled for the repository.
+
+## Keep Jenkins available after restart
+
+GitHub cannot start a stopped local Jenkins instance: the webhook has to reach an already-running public endpoint. Run `tools/Keep-JenkinsWebhookOnline.ps1` at Windows sign-in to keep Jenkins and its public tunnel available. The script starts Jenkins when needed, recreates a localhost.run tunnel after an interruption, and updates the repository webhook with the new temporary URL. It requires the GitHub CLI to be authenticated for the Windows user with the `admin:repo_hook` scope.
 
 ## Gmail notifications
 
