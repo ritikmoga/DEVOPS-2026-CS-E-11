@@ -9,6 +9,8 @@ const TOKEN_KEY = "eventhub_admin_access";
 const html = String.raw;
 let refreshRequest = null;
 let renderSequence = 0;
+let loginNotice = "";
+let toastTimer = null;
 
 const navItems = [
   ["/dashboard", "Overview", "▦"],
@@ -24,6 +26,8 @@ const navItems = [
   ["/dashboard/settings", "Settings", "⚙"],
 ];
 
+class AccessError extends Error {}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -31,6 +35,25 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function initials(name = "") {
+  return (
+    String(name)
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0] || "")
+      .join("")
+      .toUpperCase() || "AD"
+  );
+}
+
+function greeting(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning, admin.";
+  if (hour < 17) return "Good afternoon, admin.";
+  return "Good evening, admin.";
 }
 
 function formatDate(value, includeTime = false) {
@@ -93,17 +116,28 @@ function navigate(path, replace = false) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function showToast(message, type = "success") {
+  const toast = $("#toast");
+  clearTimeout(toastTimer);
+  if (!toast.length) {
+    window.alert(message);
+    return;
+  }
+  toast.text(message).attr("class", `toast ${type}`).prop("hidden", false);
+  toastTimer = setTimeout(() => toast.prop("hidden", true), 4000);
+}
+
 function loading(message = "Loading admin workspace…") {
-  return html`<div class="loading"><span class="spinner"></span>${escapeHtml(message)}</div>`;
+  return html`<div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>${escapeHtml(message)}</div>`;
 }
 
 function errorState(message) {
   return html`<div class="page-content">
-    <section class="panel empty-state">
-      <b>!</b>
+    <section class="panel empty-state" role="alert">
+      <b aria-hidden="true">!</b>
       <h3>Unable to load this view</h3>
       <p>${escapeHtml(message)}</p>
-      <button class="secondary" id="retry-page">Try again</button>
+      <button class="secondary" id="retry-page" type="button">Try again</button>
     </section>
   </div>`;
 }
@@ -141,12 +175,40 @@ function metric(label, value, detail, accent = false) {
   </div>`;
 }
 
+// Bar chart built from real totals. Heights are relative to the largest value.
+function barChart(items, label) {
+  const values = items.map(([, value]) => Number(value) || 0);
+  const max = Math.max(1, ...values);
+  return html`<div class="jquery-chart bars" role="img" aria-label="${escapeHtml(label)}">
+    ${items
+      .map(([name, value]) => {
+        const amount = Number(value) || 0;
+        const pct = Math.max(4, Math.round((amount / max) * 100));
+        return html`<div style="height:${pct}%" title="${escapeHtml(name)}: ${amount}">
+          <span>${escapeHtml(name)} · ${amount}</span>
+        </div>`;
+      })
+      .join("")}
+  </div>`;
+}
+
+async function fetchApiHealth() {
+  try {
+    const response = await fetch("/health", { cache: "no-store" });
+    return response.ok ? "Operational" : "Degraded";
+  } catch {
+    return "Unreachable";
+  }
+}
+
 function renderLogin() {
+  const notice = loginNotice;
+  loginNotice = "";
   $("#app").html(
     html`<div class="login-page">
       <div class="login-box">
         <div class="admin-logo">
-          <span class="logo-mark">E</span>
+          <span class="logo-mark" aria-hidden="true">E</span>
           <div><strong>EventHub</strong><small>OPERATIONS CONSOLE</small></div>
         </div>
         <p class="kicker">SECURE ADMIN ACCESS</p>
@@ -165,8 +227,8 @@ function renderLogin() {
               required
               autocomplete="current-password"
           /></label>
-          <p class="error-text" id="login-error"></p>
-          <button class="primary wide">Sign in to console</button>
+          <p class="error-text" id="login-error" role="alert">${escapeHtml(notice)}</p>
+          <button class="primary wide" type="submit">Sign in to console</button>
         </form>
         <a class="back-public" href="${escapeHtml(PUBLIC_APP_URL)}">← Back to public site</a>
       </div>
@@ -174,11 +236,8 @@ function renderLogin() {
         <p class="kicker">CONTROL WITH CONFIDENCE</p>
         <h2>Every decision has a trace.</h2>
         <p>
-          Attendance, proof decisions and certificates are connected to an immutable audit trail.
+          Attendance, proof decisions and certificates are connected to an audit trail.
         </p>
-        <div class="aside-status">
-          <b>●</b><span>Live operations<br /><strong>All services operational</strong></span>
-        </div>
       </div>
     </div>`,
   );
@@ -186,110 +245,114 @@ function renderLogin() {
 
 function shell(profile, content) {
   const path = location.pathname.replace(/\/+$/, "") || "/dashboard";
+  const roles = (profile.roles || []).join(" · ");
   return html`<div class="admin-shell">
     <aside class="admin-side" id="admin-side">
       <div class="admin-logo">
-        <span class="logo-mark">E</span>
+        <span class="logo-mark" aria-hidden="true">E</span>
         <div><strong>EventHub</strong><small>OPERATIONS CONSOLE</small></div>
-        <button id="close-menu">×</button>
+        <button id="close-menu" type="button" aria-label="Close menu">×</button>
       </div>
       <div class="admin-user">
-        <div class="admin-avatar">${escapeHtml(profile.fullName.slice(0, 2).toUpperCase())}</div>
+        <div class="admin-avatar" aria-hidden="true">${escapeHtml(initials(profile.fullName))}</div>
         <div>
-          <strong>${escapeHtml(profile.fullName)}</strong
-          ><small>${escapeHtml(profile.roles.join(" · "))}</small>
+          <strong>${escapeHtml(profile.fullName || "Administrator")}</strong
+          ><small>${escapeHtml(roles)}</small>
         </div>
-        <span>⌄</span>
       </div>
-      <nav>
+      <nav aria-label="Admin">
         ${navItems
           .map(([url, label, icon]) => {
             const active = url === "/dashboard" ? path === url : path.startsWith(url);
-            return html`<a href="${url}" data-link class="nav-item${active ? " active" : ""}">
-              <b>${icon}</b><span>${label}</span>${label === "Proof review" ? html`<i>4</i>` : ""}
-            </a>`;
+            const badge =
+              label === "Proof review" ? html`<i id="proof-badge" hidden></i>` : "";
+            return html`<a
+              href="${url}"
+              data-link
+              class="nav-item${active ? " active" : ""}"
+              ${active ? 'aria-current="page"' : ""}
+              ><b aria-hidden="true">${icon}</b><span>${label}</span>${badge}</a
+            >`;
           })
           .join("")}
       </nav>
-      <button class="logout" id="admin-sign-out">↗ Sign out</button>
+      <button class="logout" id="admin-sign-out" type="button">↗ Sign out</button>
     </aside>
     <section class="admin-content">
       <header class="admin-top">
-        <button class="mobile-toggle" id="open-menu">☰</button>
-        <div class="crumb">EVENTHUB <span>/</span> OPERATIONS</div>
+        <button class="mobile-toggle" id="open-menu" type="button" aria-label="Open menu">☰</button>
+        <div class="crumb">EVENTHUB <span aria-hidden="true">/</span> OPERATIONS</div>
         <div class="top-actions">
           <a class="public-site-link" href="${escapeHtml(PUBLIC_APP_URL)}">Public site</a
-          ><span>◉</span><span class="online"><i></i> System operational</span>
+          ><span class="online"><i aria-hidden="true"></i> Console</span>
         </div>
       </header>
       <main id="admin-page">${content}</main>
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     </section>
   </div>`;
 }
 
+async function refreshProofBadge() {
+  try {
+    const data = (await api("/admin/analytics/overview")).data;
+    const count = Number(data?.pendingProofs) || 0;
+    $("#proof-badge").text(count).prop("hidden", count === 0);
+  } catch {
+    $("#proof-badge").prop("hidden", true);
+  }
+}
+
 async function getProfile() {
   const profile = (await api("/auth/me")).data;
-  if (!profile.roles?.some((role) => ["ADMIN", "SUPER_ADMIN"].includes(role))) {
-    throw new Error("This account does not have admin access.");
+  if (!profile?.roles?.some((role) => ["ADMIN", "SUPER_ADMIN"].includes(role))) {
+    throw new AccessError("This account does not have admin access.");
   }
   return profile;
 }
 
 async function renderOverview() {
-  const data = (await api("/admin/analytics/overview")).data;
+  const [data, apiState] = await Promise.all([
+    api("/admin/analytics/overview").then((x) => x.data),
+    fetchApiHealth(),
+  ]);
   return html`<div class="page-content">
-    ${pageTitle(
-      "OPERATIONS / TODAY",
-      "Good morning, admin.",
-      "Here is what needs your attention across the platform.",
-    )}
+    ${pageTitle("OPERATIONS / TODAY", greeting(), "Here is what needs your attention across the platform.")}
     <div class="metrics">
-      ${metric("Total events", data.totalEvents ?? 0, "All lifecycle states")}${metric(
-        "Upcoming",
-        data.upcomingEvents ?? 0,
-        "Published events",
-      )}${metric("Registrations", data.registrations ?? 0, "All participants")}${metric(
-        "Pending proofs",
-        data.pendingProofs ?? 0,
-        "Includes flagged",
-      )}${metric("Today's check-ins", data.todayCheckins ?? 0, "Live attendance")}${metric(
-        "System health",
-        "100%",
-        "All services operational",
-        true,
-      )}
+      ${metric("Total events", data.totalEvents ?? 0, "All lifecycle states")}
+      ${metric("Upcoming", data.upcomingEvents ?? 0, "Published events")}
+      ${metric("Registrations", data.registrations ?? 0, "All participants")}
+      ${metric("Pending proofs", data.pendingProofs ?? 0, "Includes flagged")}
+      ${metric("Today's check-ins", data.todayCheckins ?? 0, "Live attendance")}
+      ${metric("API status", apiState, "Reported by the server health check", apiState === "Operational")}
     </div>
     <div class="dashboard-grid">
       <section class="panel chart-panel">
         ${panelTitle(
-          "ACTIVITY / LAST 30 DAYS",
-          "Participation pulse",
+          "CURRENT TOTALS",
+          "Platform at a glance",
           '<a href="/dashboard/analytics" data-link>View analytics →</a>',
         )}
-        <div class="jquery-chart" aria-label="Registration and attendance activity">
-          <div style="height:22%"><span>01</span></div>
-          <div style="height:38%"><span>05</span></div>
-          <div style="height:33%"><span>10</span></div>
-          <div style="height:61%"><span>15</span></div>
-          <div style="height:50%"><span>20</span></div>
-          <div style="height:78%"><span>25</span></div>
-          <div style="height:92%"><span>30</span></div>
-        </div>
-        <div class="legend">
-          <span><i class="blue"></i> Registrations</span
-          ><span><i class="green"></i> Attendance</span>
-        </div>
+        ${barChart(
+          [
+            ["Upcoming", data.upcomingEvents],
+            ["Registrations", data.registrations],
+            ["Check-ins today", data.todayCheckins],
+            ["Pending proofs", data.pendingProofs],
+          ],
+          "Current totals across events, registrations, check-ins and proofs",
+        )}
       </section>
       <section class="panel attention">
         ${panelTitle("WORK QUEUE", "Needs attention")}<a
           class="queue-row"
           href="/dashboard/proof-review"
           data-link
-          ><div class="queue-icon">▤</div>
+          ><div class="queue-icon" aria-hidden="true">▤</div>
           <div><strong>Proofs to review</strong><small>manual evidence decisions</small></div>
           <b>${data.pendingProofs ?? 0}</b></a
         ><a class="queue-row" href="/dashboard/attendance" data-link
-          ><div class="queue-icon">⌗</div>
+          ><div class="queue-icon" aria-hidden="true">⌗</div>
           <div><strong>Live scanner</strong><small>check-ins recorded today</small></div>
           <b>${data.todayCheckins ?? 0}</b></a
         >
@@ -305,29 +368,31 @@ async function renderEvents() {
       "EVENT OPERATIONS",
       "Events",
       "Create, publish and steward the full event lifecycle.",
-      html`<button class="primary" id="open-event-modal">+ Create event</button>`,
+      html`<button class="primary" id="open-event-modal" type="button">+ Create event</button>`,
     )}
     <div class="toolbar">
       <div class="search">
-        <span>⌕</span><input id="table-search" placeholder="Search events" />
+        <label class="sr-only" for="table-search">Search events</label>
+        <span aria-hidden="true">⌕</span><input id="table-search" placeholder="Search events" />
       </div>
+      <label class="sr-only" for="status-filter">Filter by status</label>
       <select id="status-filter">
         <option value="">All statuses</option>
-        <option>DRAFT</option>
-        <option>PUBLISHED</option>
-        <option>COMPLETED</option>
+        <option value="DRAFT">DRAFT</option>
+        <option value="PUBLISHED">PUBLISHED</option>
+        <option value="COMPLETED">COMPLETED</option>
       </select>
     </div>
     <section class="panel table-panel">
       <table>
         <thead>
           <tr>
-            <th>EVENT</th>
-            <th>DATE</th>
-            <th>MODE</th>
-            <th>CAPACITY</th>
-            <th>STATUS</th>
-            <th>ACTION</th>
+            <th scope="col">EVENT</th>
+            <th scope="col">DATE</th>
+            <th scope="col">MODE</th>
+            <th scope="col">CAPACITY</th>
+            <th scope="col">STATUS</th>
+            <th scope="col">ACTION</th>
           </tr>
         </thead>
         <tbody id="events-table">
@@ -347,12 +412,13 @@ async function renderEvents() {
                   </td>
                   <td>${formatDate(row.startAt)}</td>
                   <td>${escapeHtml(row.mode)}</td>
-                  <td>${row.confirmedCount ?? 0} / ${row.capacity}</td>
+                  <td>${escapeHtml(row.confirmedCount ?? 0)} / ${escapeHtml(row.capacity)}</td>
                   <td>${status(row.status)}</td>
                   <td>
                     ${row.status === "DRAFT"
                       ? html`<button
                           class="secondary publish-event"
+                          type="button"
                           data-id="${escapeHtml(row.id)}"
                         >
                           Publish
@@ -367,10 +433,10 @@ async function renderEvents() {
       ${rows.length ? "" : html`<div class="empty-state"><h3>No events found</h3></div>`}
     </section>
     <div class="modal-backdrop" id="event-modal" hidden>
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
         <div class="modal-head">
-          <h2>Create event</h2>
-          <button id="close-event-modal">×</button>
+          <h2 id="event-modal-title">Create event</h2>
+          <button id="close-event-modal" type="button" aria-label="Close">×</button>
         </div>
         <form id="event-form">
           <label>Title<input required name="title" /></label
@@ -399,8 +465,8 @@ async function renderEvents() {
               </select></label
             >
           </div>
-          <p class="error-text" id="event-error"></p>
-          <button class="primary wide">Create draft</button>
+          <p class="error-text" id="event-error" role="alert"></p>
+          <button class="primary wide" type="submit">Create draft</button>
         </form>
       </div>
     </div>
@@ -417,11 +483,9 @@ async function renderEventDetail(id) {
       `${event.mode} · ${formatDate(event.startAt, true)}`,
     )}
     <div class="metrics">
-      ${metric("Status", event.status, "Lifecycle")}${metric(
-        "Capacity",
-        event.capacity,
-        "Maximum seats",
-      )}${metric("Confirmed", event.confirmedCount ?? 0, "Participants")}
+      ${metric("Status", event.status, "Lifecycle")}
+      ${metric("Capacity", event.capacity, "Maximum seats")}
+      ${metric("Confirmed", event.confirmedCount ?? 0, "Participants")}
     </div>
     <section class="panel">
       ${panelTitle("EVENT RECORD", "Operational details")}
@@ -459,18 +523,20 @@ async function renderRegistrations() {
     )}
     <div class="toolbar">
       <div class="search">
-        <span>⌕</span><input id="table-search" placeholder="Search participant or number" />
+        <label class="sr-only" for="table-search">Search registrations</label>
+        <span aria-hidden="true">⌕</span
+        ><input id="table-search" placeholder="Search participant or number" />
       </div>
     </div>
     <section class="panel table-panel">
       <table>
         <thead>
           <tr>
-            <th>REGISTRATION</th>
-            <th>PARTICIPANT</th>
-            <th>EVENT</th>
-            <th>REGISTERED</th>
-            <th>STATUS</th>
+            <th scope="col">REGISTRATION</th>
+            <th scope="col">PARTICIPANT</th>
+            <th scope="col">EVENT</th>
+            <th scope="col">REGISTERED</th>
+            <th scope="col">STATUS</th>
           </tr>
         </thead>
         <tbody>
@@ -508,24 +574,28 @@ function renderAttendance() {
     )}
     <div class="scanner-grid">
       <section class="panel">
-        <div class="mode-tabs">
-          <button class="active attendance-mode" data-mode="check-in">Check in</button
-          ><button class="attendance-mode" data-mode="check-out">Check out</button>
+        <div class="mode-tabs" role="group" aria-label="Attendance mode">
+          <button class="active attendance-mode" type="button" data-mode="check-in" aria-pressed="true"
+            >Check in</button
+          ><button class="attendance-mode" type="button" data-mode="check-out" aria-pressed="false"
+            >Check out</button
+          >
         </div>
         <form id="attendance-form" data-mode="check-in">
           <label
             >Ticket token<input
               required
               name="token"
+              autocomplete="off"
               placeholder="Paste or scan the opaque ticket token"
           /></label>
-          <p class="error-text" id="attendance-error"></p>
-          <button class="primary wide">Record check-in</button>
+          <p class="error-text" id="attendance-error" role="alert"></p>
+          <button class="primary wide" type="submit">Record check-in</button>
         </form>
       </section>
-      <section class="panel scan-result" id="attendance-result">
+      <section class="panel scan-result" id="attendance-result" role="status">
         <div class="empty-state">
-          <b>⌗</b>
+          <b aria-hidden="true">⌗</b>
           <h3>Ready for the next participant</h3>
           <p>Scan a ticket to see the participant record and attendance result here.</p>
         </div>
@@ -546,11 +616,11 @@ async function renderProofs() {
       <table>
         <thead>
           <tr>
-            <th>FILE</th>
-            <th>PARTICIPANT</th>
-            <th>CHECKSUM</th>
-            <th>STATUS</th>
-            <th>DECISION</th>
+            <th scope="col">FILE</th>
+            <th scope="col">PARTICIPANT</th>
+            <th scope="col">CHECKSUM</th>
+            <th scope="col">STATUS</th>
+            <th scope="col">DECISION</th>
           </tr>
         </thead>
         <tbody>
@@ -561,7 +631,7 @@ async function renderProofs() {
                   <td>
                     <strong>${escapeHtml(row.originalFileName)}</strong
                     ><small class="block-muted"
-                      >${escapeHtml(row.mimeType)} · ${Math.round(row.fileSize / 1024)} KB</small
+                      >${escapeHtml(row.mimeType)} · ${Math.round((row.fileSize || 0) / 1024)} KB</small
                     >
                   </td>
                   <td>
@@ -575,12 +645,14 @@ async function renderProofs() {
                     <div class="row-actions">
                       <button
                         class="approve review-proof"
+                        type="button"
                         data-id="${escapeHtml(row.id)}"
                         data-decision="verify"
                       >
                         ✓ Verify</button
                       ><button
                         class="reject review-proof"
+                        type="button"
                         data-id="${escapeHtml(row.id)}"
                         data-decision="flag"
                       >
@@ -596,7 +668,7 @@ async function renderProofs() {
       ${rows.length
         ? ""
         : html`<div class="empty-state">
-            <b>✓</b>
+            <b aria-hidden="true">✓</b>
             <h3>The proof queue is clear</h3>
             <p>New uploaded evidence will appear here.</p>
           </div>`}
@@ -606,6 +678,7 @@ async function renderProofs() {
 
 async function renderCertificates() {
   const events = (await api("/admin/events?limit=100")).data || [];
+  const completed = events.filter((event) => event.status === "COMPLETED");
   return html`<div class="page-content">
     ${pageTitle(
       "CREDENTIALS",
@@ -613,7 +686,7 @@ async function renderCertificates() {
       "Generate signed, publicly verifiable certificates for eligible attendance.",
     )}
     <section class="panel certificate-generator">
-      <div class="generator-icon">✓</div>
+      <div class="generator-icon" aria-hidden="true">✓</div>
       <div>
         <p class="kicker">EVENT COMPLETION</p>
         <h2>Generate eligible certificates</h2>
@@ -621,18 +694,22 @@ async function renderCertificates() {
           Only participants with finalized PRESENT attendance are included. Generation is
           idempotent.
         </p>
-        <select id="certificate-event">
-          <option value="">Select a completed event</option>
-          ${events
-            .map(
-              (event) =>
-                html`<option value="${escapeHtml(event.id)}">
-                  ${escapeHtml(event.title)} · ${escapeHtml(event.status)}
-                </option>`,
-            )
-            .join("")}</select
-        ><button class="primary" id="generate-certificates" disabled>Generate certificates</button>
-        <p id="certificate-result"></p>
+        ${completed.length
+          ? html`<label class="sr-only" for="certificate-event">Completed event</label>
+              <select id="certificate-event">
+                <option value="">Select a completed event</option>
+                ${completed
+                  .map(
+                    (event) =>
+                      html`<option value="${escapeHtml(event.id)}">${escapeHtml(event.title)}</option>`,
+                  )
+                  .join("")}
+              </select>
+              <button class="primary" id="generate-certificates" type="button" disabled>
+                Generate certificates
+              </button>`
+          : html`<p class="muted">No completed events yet. Certificates can be generated once an event is completed.</p>`}
+        <p id="certificate-result" role="status"></p>
       </div>
     </section>
   </div>`;
@@ -641,20 +718,16 @@ async function renderCertificates() {
 async function renderUsers() {
   const rows = (await api("/admin/users?limit=50")).data || [];
   return html`<div class="page-content">
-    ${pageTitle(
-      "IDENTITY & ACCESS",
-      "Users",
-      "Manage active accounts and inspect database-driven roles.",
-    )}
+    ${pageTitle("IDENTITY & ACCESS", "Users", "Manage active accounts and inspect database-driven roles.")}
     <section class="panel table-panel">
       <table>
         <thead>
           <tr>
-            <th>USER</th>
-            <th>DEPARTMENT</th>
-            <th>ROLES</th>
-            <th>CREATED</th>
-            <th>STATUS</th>
+            <th scope="col">USER</th>
+            <th scope="col">DEPARTMENT</th>
+            <th scope="col">ROLES</th>
+            <th scope="col">CREATED</th>
+            <th scope="col">STATUS</th>
           </tr>
         </thead>
         <tbody>
@@ -664,11 +737,9 @@ async function renderUsers() {
               return html`<tr>
                 <td>
                   <div class="person">
-                    <div class="mini-avatar">
-                      ${escapeHtml(user.fullName.slice(0, 2).toUpperCase())}
-                    </div>
+                    <div class="mini-avatar" aria-hidden="true">${escapeHtml(initials(user.fullName))}</div>
                     <span
-                      ><strong>${escapeHtml(user.fullName)}</strong
+                      ><strong>${escapeHtml(user.fullName || "Unnamed user")}</strong
                       ><small>${escapeHtml(user.email)}</small></span
                     >
                   </div>
@@ -692,55 +763,45 @@ async function renderUsers() {
 
 async function renderAnalytics() {
   const data = (await api("/admin/analytics/overview")).data;
-  const values = [42, 70, 52, 94, 86, 118];
   return html`<div class="page-content">
     ${pageTitle(
       "REPORTING & INSIGHT",
       "Analytics",
-      "Operational signals across events, attendance and evidence.",
+      "Current operational totals. Historical trends will appear once the server provides time-series data.",
     )}
     <div class="metrics">
-      ${metric("Registrations", data.registrations ?? 0, "All time")}${metric(
-        "Attendance rate",
-        "—",
-        "Derived per event",
-      )}${metric("Proof queue", data.pendingProofs ?? 0, "Needs human review")}
+      ${metric("Registrations", data.registrations ?? 0, "All time")}
+      ${metric("Proof queue", data.pendingProofs ?? 0, "Needs human review")}
+      ${metric("Today's check-ins", data.todayCheckins ?? 0, "Live attendance")}
     </div>
     <div class="dashboard-grid">
       <section class="panel chart-panel">
-        ${panelTitle("MONTHLY TREND", "Registration volume")}
-        <div class="jquery-chart bars">
-          ${values
-            .map(
-              (value, index) =>
-                html`<div style="height:${value / 1.2}%">
-                  <span>${["Jan", "Feb", "Mar", "Apr", "May", "Jun"][index]}</span>
-                </div>`,
-            )
-            .join("")}
-        </div>
+        ${panelTitle("CURRENT TOTALS", "Operational totals")}
+        ${barChart(
+          [
+            ["Events", data.totalEvents],
+            ["Upcoming", data.upcomingEvents],
+            ["Registrations", data.registrations],
+            ["Check-ins today", data.todayCheckins],
+            ["Pending proofs", data.pendingProofs],
+          ],
+          "Current operational totals",
+        )}
       </section>
       <section class="panel">
         ${panelTitle("PARTICIPATION SIGNAL", "What to watch")}
         <div class="signal">
-          <span class="signal-dot green"></span>
+          <span class="signal-dot green" aria-hidden="true"></span>
           <div>
             <strong>Evidence-first verification</strong>
             <p>QR attendance is the strongest signal for verified participation.</p>
           </div>
         </div>
         <div class="signal">
-          <span class="signal-dot orange"></span>
+          <span class="signal-dot orange" aria-hidden="true"></span>
           <div>
             <strong>Manual proof review</strong>
             <p>Automated results are risk signals; reviewers retain final control.</p>
-          </div>
-        </div>
-        <div class="signal">
-          <span class="signal-dot blue"></span>
-          <div>
-            <strong>Capacity safety</strong>
-            <p>Registration allocation is transactionally serialized in MongoDB.</p>
           </div>
         </div>
       </section>
@@ -750,29 +811,20 @@ async function renderAnalytics() {
 
 function renderReports() {
   const reports = [
-    ["Event report", "Lifecycle, dates, capacity and organizers"],
-    ["Registration report", "Participant status and attendance evidence"],
-    ["Attendance report", "Check-in, check-out and duration"],
-    ["Proof report", "Checksums and manual decisions"],
-    ["Certificate report", "Issued and revoked credentials"],
+    ["Registration report", "Participant status and attendance evidence", "registrations"],
   ];
   return html`<div class="page-content">
-    ${pageTitle(
-      "EXPORT CENTER",
-      "Reports",
-      "Download operational data for institutional reporting.",
-    )}
+    ${pageTitle("EXPORT CENTER", "Reports", "Download operational data for institutional reporting.")}
     <div class="report-grid">
       ${reports
         .map(
           ([title, description]) =>
             html`<div class="report-card">
-              <div class="report-icon">▧</div>
-              <h3>${title}</h3>
-              <p>${description}</p>
+              <div class="report-icon" aria-hidden="true">▧</div>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(description)}</p>
               <div>
-                <button class="secondary download-report">CSV</button
-                ><button class="secondary disabled" disabled>PDF</button>
+                <button class="secondary download-report" type="button">CSV</button>
               </div>
             </div>`,
         )
@@ -793,10 +845,10 @@ async function renderAudit() {
       <table>
         <thead>
           <tr>
-            <th>ACTION</th>
-            <th>ACTOR</th>
-            <th>RESOURCE</th>
-            <th>TIME</th>
+            <th scope="col">ACTION</th>
+            <th scope="col">ACTOR</th>
+            <th scope="col">RESOURCE</th>
+            <th scope="col">TIME</th>
           </tr>
         </thead>
         <tbody>
@@ -831,7 +883,7 @@ function renderSettings() {
     ${pageTitle(
       "PLATFORM CONFIGURATION",
       "Settings",
-      "Environment-backed controls and safe workflow defaults.",
+      "Read-only summary of how the platform is configured on the server.",
     )}
     <div class="settings-grid">
       <section class="panel">
@@ -839,33 +891,29 @@ function renderSettings() {
         <div class="setting-row">
           <div>
             <strong>Minimum attendance percentage</strong>
-            <p>Events default to 75% for PRESENT status.</p>
+            <p>Server default: 75% for PRESENT status. Changed through server configuration.</p>
           </div>
-          <input value="75" readonly />
         </div>
         <div class="setting-row">
           <div>
             <strong>Location validation</strong>
-            <p>Calculated on the backend when event coordinates are configured.</p>
+            <p>Applied on the server when event coordinates are configured.</p>
           </div>
-          ${status("AVAILABLE")}
         </div>
       </section>
       <section class="panel">
-        ${panelTitle("DATABASE", "MongoDB storage")}
+        ${panelTitle("DATABASE", "Storage")}
         <div class="setting-row">
           <div>
             <strong>Document data</strong>
-            <p>Users, events, registrations and audit records use MongoDB through Prisma.</p>
+            <p>Users, events, registrations and audit records are stored in MongoDB through Prisma.</p>
           </div>
-          ${status("CONFIGURED")}
         </div>
         <div class="setting-row">
           <div>
             <strong>Private files</strong>
-            <p>Proofs and certificates remain private by default.</p>
+            <p>Proofs and certificates are stored privately by default.</p>
           </div>
-          ${status("PRIVATE")}
         </div>
       </section>
     </div>
@@ -894,6 +942,7 @@ async function renderApp() {
   const sequence = ++renderSequence;
   const path = location.pathname.replace(/\/+$/, "") || "/";
   const token = localStorage.getItem(TOKEN_KEY);
+
   if (!token) {
     if (path !== "/login") history.replaceState({}, "", "/login");
     renderLogin();
@@ -903,21 +952,43 @@ async function renderApp() {
     navigate("/dashboard", true);
     return;
   }
+
   $("#app").html(loading());
+
+  let profile;
   try {
-    const profile = await getProfile();
-    if (sequence !== renderSequence) return;
-    $("#app").html(shell(profile, loading("Loading view…")));
-    const content = await routeContent(path);
-    if (sequence === renderSequence) $("#admin-page").html(content);
+    profile = await getProfile();
   } catch (error) {
-    if (error?.status === 401 || error instanceof Error) {
+    if (sequence !== renderSequence) return;
+    if (error instanceof AccessError) loginNotice = error.message;
+    if (error instanceof AccessError || error?.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
       navigate("/login", true);
       return;
     }
-    $("#app").html(errorState(apiError(error)));
+    $("#app").html(errorState(apiError(error, "Unable to load your profile.")));
+    return;
   }
+  if (sequence !== renderSequence) return;
+
+  $("#app").html(shell(profile, loading("Loading view…")));
+
+  let content;
+  try {
+    content = await routeContent(path);
+  } catch (error) {
+    if (sequence !== renderSequence) return;
+    if (error?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      navigate("/login", true);
+      return;
+    }
+    content = errorState(apiError(error));
+  }
+
+  if (sequence !== renderSequence) return;
+  $("#admin-page").html(content);
+  refreshProofBadge();
 }
 
 $(document).on("click", "a[data-link]", function handleLink(event) {
@@ -956,45 +1027,78 @@ $(document).on("click", "#admin-sign-out", async () => {
 
 $(document).on("click", "#open-menu", () => $("#admin-side").addClass("open"));
 $(document).on("click", "#close-menu", () => $("#admin-side").removeClass("open"));
-$(document).on("click", "#retry-page", renderApp);
-$(document).on("click", "#open-event-modal", () => $("#event-modal").prop("hidden", false));
-$(document).on("click", "#close-event-modal", () => $("#event-modal").prop("hidden", true));
+$(document).on("click", "#retry-page", () => renderApp());
+
+// Event modal: open, close with button, backdrop or Escape, and focus management.
+function openEventModal() {
+  $("#event-modal").prop("hidden", false);
+  $("#event-modal input[name='title']").trigger("focus");
+}
+function closeEventModal() {
+  $("#event-modal").prop("hidden", true);
+  $("#open-event-modal").trigger("focus");
+}
+$(document).on("click", "#open-event-modal", openEventModal);
+$(document).on("click", "#close-event-modal", closeEventModal);
 $(document).on("mousedown", "#event-modal", function closeBackdrop(event) {
-  if (event.target === this) $(this).prop("hidden", true);
+  if (event.target === this) closeEventModal();
+});
+$(document).on("keydown", (event) => {
+  if (event.key === "Escape" && !$("#event-modal").prop("hidden")) closeEventModal();
 });
 
-$(document).on("input", "#table-search", function filterTable() {
-  const query = String(this.value).trim().toLowerCase();
+// Search and status filters apply together to any table.
+function applyTableFilters() {
+  const query = String($("#table-search").val() || "")
+    .trim()
+    .toLowerCase();
+  const statusValue = String($("#status-filter").val() || "");
   $("tbody tr").each(function filterRow() {
-    $(this).toggle(
-      String($(this).data("search") || $(this).text())
-        .toLowerCase()
-        .includes(query),
-    );
+    const row = $(this);
+    const text = String(row.data("search") || row.text()).toLowerCase();
+    const matchesQuery = !query || text.includes(query);
+    const matchesStatus = !statusValue || row.data("status") === statusValue;
+    row.toggle(matchesQuery && matchesStatus);
   });
-});
+}
+$(document).on("input change", "#table-search, #status-filter", applyTableFilters);
 
-$(document).on("change", "#status-filter", function filterStatus() {
-  const value = this.value;
-  $("#events-table tr").each(function filterRow() {
-    $(this).toggle(!value || $(this).data("status") === value);
-  });
-});
+// Validates and converts the event form before it is sent.
+function buildEventPayload(values) {
+  const capacity = Number(values.capacity);
+  if (!Number.isInteger(capacity) || capacity < 1) {
+    throw new Error("Capacity must be a whole number of at least 1.");
+  }
+  const payload = { ...values, capacity };
+  const dateKeys = ["startAt", "endAt", "registrationStartAt", "registrationEndAt"];
+  for (const key of dateKeys) {
+    const date = new Date(values[key]);
+    if (Number.isNaN(date.getTime())) throw new Error("Please enter valid dates and times.");
+    payload[key] = date.toISOString();
+  }
+  if (new Date(payload.endAt) <= new Date(payload.startAt)) {
+    throw new Error("The event end time must be after its start time.");
+  }
+  if (new Date(payload.registrationEndAt) < new Date(payload.registrationStartAt)) {
+    throw new Error("Registration must end after it starts.");
+  }
+  return payload;
+}
 
 $(document).on("submit", "#event-form", async function createEvent(event) {
   event.preventDefault();
-  const data = Object.fromEntries(new FormData(this));
-  data.capacity = Number(data.capacity);
-  ["startAt", "endAt", "registrationStartAt", "registrationEndAt"].forEach((key) => {
-    data[key] = new Date(data[key]).toISOString();
-  });
-  const button = $(this).find("button").prop("disabled", true).text("Creating…");
+  const form = this;
+  const button = $(form).find("button").prop("disabled", true).text("Creating…");
+  $("#event-error").text("");
   try {
-    await api("/admin/events", { method: "POST", data });
-    $("#event-modal").prop("hidden", true);
-    renderApp();
-  } catch (xhr) {
-    $("#event-error").text(apiError(xhr, "Unable to create event."));
+    const payload = buildEventPayload(Object.fromEntries(new FormData(form)));
+    await api("/admin/events", { method: "POST", data: payload });
+    await renderApp();
+    showToast("Event draft created.");
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : apiError(error, "Unable to create event.");
+    $("#event-error").text(message);
     button.prop("disabled", false).text("Create draft");
   }
 });
@@ -1002,18 +1106,19 @@ $(document).on("submit", "#event-form", async function createEvent(event) {
 $(document).on("click", ".publish-event", async function publishEvent() {
   const button = $(this).prop("disabled", true).text("Publishing…");
   try {
-    await api(`/admin/events/${button.data("id")}/publish`, { method: "POST" });
+    await api(`/admin/events/${encodeURIComponent(button.data("id"))}/publish`, { method: "POST" });
     button.replaceWith(status("PUBLISHED"));
+    showToast("Event published.");
   } catch (xhr) {
     button.prop("disabled", false).text("Publish");
-    window.alert(apiError(xhr, "Unable to publish event."));
+    showToast(apiError(xhr, "Unable to publish event."), "error");
   }
 });
 
 $(document).on("click", ".attendance-mode", function switchMode() {
   const mode = $(this).data("mode");
-  $(".attendance-mode").removeClass("active");
-  $(this).addClass("active");
+  $(".attendance-mode").removeClass("active").attr("aria-pressed", "false");
+  $(this).addClass("active").attr("aria-pressed", "true");
   $("#attendance-form")
     .data("mode", mode)
     .find("button")
@@ -1023,57 +1128,64 @@ $(document).on("click", ".attendance-mode", function switchMode() {
 $(document).on("submit", "#attendance-form", async function recordAttendance(event) {
   event.preventDefault();
   const mode = $(this).data("mode");
-  const token = String(new FormData(this).get("token") || "");
+  const token = String(new FormData(this).get("token") || "").trim();
   const button = $(this).find("button").prop("disabled", true).text("Validating…");
   try {
-    const result = (await api(`/admin/attendance/${mode}`, { method: "POST", data: { token } }))
-      .data;
+    const result = (
+      await api(`/admin/attendance/${mode}`, { method: "POST", data: { token } })
+    ).data;
     $("#attendance-result").html(
-      html`<div class="success-icon">✓</div>
+      html`<div class="success-icon" aria-hidden="true">✓</div>
         <p class="kicker">${escapeHtml(mode.toUpperCase())} RECORDED</p>
         <h2>${escapeHtml(result.participant?.fullName)}</h2>
         <p class="muted">${escapeHtml(result.participant?.email)}</p>
         <div class="result-detail">
           <span>Attendance status</span>${status(result.attendance?.status)}
-        </div>
-        <div class="result-detail">
-          <span>Registration</span><strong>Verified secure ticket</strong>
         </div>`,
     );
     $("#attendance-error").text("");
+    $("#attendance-form input[name='token']").val("").trigger("focus");
   } catch (xhr) {
     $("#attendance-error").text(apiError(xhr, "Ticket validation failed."));
   } finally {
-    button
-      .prop("disabled", false)
-      .text(mode === "check-in" ? "Record check-in" : "Record check-out");
+    button.prop("disabled", false).text(mode === "check-in" ? "Record check-in" : "Record check-out");
   }
 });
 
 $(document).on("click", ".review-proof", async function reviewProof() {
-  const button = $(this).prop("disabled", true);
+  const button = $(this);
+  const decision = button.data("decision");
+  const id = button.data("id");
+  button.closest("tr").find("button").prop("disabled", true);
   try {
-    await api(`/admin/proofs/${button.data("id")}/${button.data("decision")}`, {
+    await api(`/admin/proofs/${encodeURIComponent(id)}/${decision}`, {
       method: "POST",
       data: { metadata: { reviewer: "manual" } },
     });
-    renderApp();
+    await renderApp();
+    showToast(decision === "verify" ? "Proof verified." : "Proof flagged for follow-up.");
   } catch (xhr) {
-    button.prop("disabled", false);
-    window.alert(apiError(xhr));
+    button.closest("tr").find("button").prop("disabled", false);
+    showToast(apiError(xhr, "Unable to record decision."), "error");
   }
 });
 
 $(document).on("change", "#certificate-event", function selectEvent() {
   $("#generate-certificates").prop("disabled", !this.value);
 });
+
 $(document).on("click", "#generate-certificates", async function generateCertificates() {
   const eventId = $("#certificate-event").val();
   const button = $(this).prop("disabled", true).text("Generating…");
+  $("#certificate-result").removeClass("success-text error-text").text("");
   try {
-    const result = (await api(`/admin/events/${eventId}/certificates/generate`, { method: "POST" }))
-      .data;
-    $("#certificate-result").addClass("success-text").text(`${result.length} certificates ready.`);
+    const result = (
+      await api(`/admin/events/${encodeURIComponent(eventId)}/certificates/generate`, {
+        method: "POST",
+      })
+    ).data;
+    const count = Array.isArray(result) ? result.length : 0;
+    $("#certificate-result").addClass("success-text").text(`${count} certificates ready.`);
   } catch (xhr) {
     $("#certificate-result").addClass("error-text").text(apiError(xhr));
   } finally {
@@ -1085,18 +1197,23 @@ $(document).on("click", ".download-report", async function downloadReport() {
   const button = $(this).prop("disabled", true).text("Preparing…");
   try {
     const csv = await rawRequest("/admin/reports/registrations", { dataType: "text" });
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `eventhub-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Registration report downloaded.");
   } catch (xhr) {
-    window.alert(apiError(xhr, "Unable to download report."));
+    showToast(apiError(xhr, "Unable to download report."), "error");
   } finally {
     button.prop("disabled", false).text("CSV");
   }
 });
 
-window.addEventListener("popstate", renderApp);
+// Only a real authentication failure signs the admin out. Other failures are shown in the page.
+window.addEventListener("popstate", () => renderApp());
 renderApp();
