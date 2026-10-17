@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import config from "./config.json";
 import "./styles.css";
 import "./ticket.css";
+import "./a11y.css";
 
 const API_URL = window.EVENTHUB_API_URL || config.apiBaseUrl;
 const TOKEN_KEY = "eventhub_access";
