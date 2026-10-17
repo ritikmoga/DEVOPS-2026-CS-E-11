@@ -7,5 +7,8 @@ COPY frontend/public-client/ ./
 RUN npm run build
 
 FROM nginx:1.27-alpine
+# The official nginx image renders *.template files with envsubst at startup.
+COPY frontend/public-client/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+ENV API_UPSTREAM=host.docker.internal:5000
 EXPOSE 80
