@@ -1,14 +1,14 @@
 # Frontend CI report
 
-- Commit: 1f8663daa34a66ea54a5fadac57cd69be2e86226
+- Commit: ca9422ace27651ff3022270bb7b8e15beec7bf6a
 - Result: **PASSED**
 
 | Check | Result | Duration |
 | --- | --- | ---: |
-| Public frontend JavaScript syntax check | ✅ Passed | 0.51s |
-| Public frontend production build | ✅ Passed | 2.54s |
-| Admin frontend JavaScript syntax check | ✅ Passed | 0.47s |
-| Admin frontend production build | ✅ Passed | 7.33s |
+| Public frontend JavaScript syntax check | ✅ Passed | 0.27s |
+| Public frontend production build | ✅ Passed | 1.17s |
+| Admin frontend JavaScript syntax check | ✅ Passed | 0.21s |
+| Admin frontend production build | ✅ Passed | 1.04s |
 
 ## Output
 
@@ -33,7 +33,7 @@ computing gzip size...
 [2mdist/[22m[32mindex.html                 [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:  0.37 kB[22m
 [2mdist/[22m[35massets/index-ClzLOkoA.css  [39m[1m[2m 18.99 kB[22m[1m[22m[2m │ gzip:  4.96 kB[22m
 [2mdist/[22m[36massets/index-C8Up1efx.js   [39m[1m[2m139.71 kB[22m[1m[22m[2m │ gzip: 48.92 kB[22m
-[32m✓ built in 1.25s[39m
+[32m✓ built in 498ms[39m
 ```
 
 ### Admin frontend JavaScript syntax check
@@ -56,6 +56,6 @@ rendering chunks...
 computing gzip size...
 [2mdist/[22m[32mindex.html                 [39m[1m[2m  0.51 kB[22m[1m[22m[2m │ gzip:  0.32 kB[22m
 [2mdist/[22m[35massets/index-Csz4oa1m.css  [39m[1m[2m 17.19 kB[22m[1m[22m[2m │ gzip:  4.55 kB[22m
-[2mdist/[22m[36massets/index-D6ucyzyy.js   [39m[1m[2m120.46 kB[22m[1m[22m[2m │ gzip: 40.29 kB[22m
-[32m✓ built in 2.27s[39m
+[2mdist/[22m[36massets/index-CJj0-wFJ.js   [39m[1m[2m120.45 kB[22m[1m[22m[2m │ gzip: 40.29 kB[22m
+[32m✓ built in 383ms[39m
 ```
