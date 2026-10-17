@@ -1,5 +1,6 @@
 const TeamMemberRole = Object.freeze({ LEADER: "LEADER", MEMBER: "MEMBER" });
 import { prisma } from "../prisma.js";
+import { withTransaction } from "../prisma-client.js";
 import { opaqueToken } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";
 export async function createTeam(eventId, leaderId, name) {
@@ -23,7 +24,7 @@ export async function createTeam(eventId, leaderId, name) {
   });
 }
 export async function joinTeam(inviteCode, userId) {
-  return prisma.$transaction(async (tx) => {
+  return withTransaction(prisma, async (tx) => {
     const team = await tx.team.findUnique({
       where: { inviteCode },
       include: { event: true, members: true },

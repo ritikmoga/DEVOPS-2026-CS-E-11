@@ -1,5 +1,6 @@
 const CertificateStatus = Object.freeze({ ISSUED: "ISSUED", REVOKED: "REVOKED" });
 import { prisma } from "../prisma.js";
+import { withTransaction } from "../prisma-client.js";
 import { storage } from "../storage/storage.service.js";
 import { opaqueToken, sequenceValue } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";
@@ -54,7 +55,7 @@ export async function generateCertificates(eventId, actorId, req) {
       generated.push({ id: existing.id, certificateNumber: existing.certificateNumber });
       continue;
     }
-    const certificateNumber = await prisma.$transaction((tx) =>
+    const certificateNumber = await withTransaction(prisma, (tx) =>
       nextCertificateNumber(tx, new Date().getUTCFullYear()),
     );
     const pdf = certificatePdf(attendance.user.fullName, event.title, certificateNumber);

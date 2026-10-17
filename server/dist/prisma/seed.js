@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma-client.js";
 
 const RoleName = Object.freeze({
   STUDENT: "STUDENT",
@@ -19,10 +19,10 @@ if (!process.env.DATABASE_URL) {
   }
 
   process.env.DATABASE_URL =
-    "postgresql://eventhub:eventhub@localhost:5432/event_management?schema=public";
+    "mongodb://eventhub:eventhub@localhost:27017/event_management?replicaSet=rs0";
 }
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const permissionCodes = [
   "EVENT_CREATE",
   "EVENT_UPDATE",

@@ -3,9 +3,12 @@ import QRCode from "qrcode";
 import config from "./config.json";
 import "./styles.css";
 import "./ticket.css";
+import "./a11y.css";
 
 const API_URL = window.EVENTHUB_API_URL || config.apiBaseUrl;
 const TOKEN_KEY = "eventhub_access";
+const DEFAULT_TITLE = "EventHub | Campus events, attendance and certificates";
+const PLACEHOLDER_IMAGE = "/event-placeholder.svg";
 const html = String.raw;
 let renderSequence = 0;
 let refreshRequest = null;
@@ -17,6 +20,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function setTitle(text) {
+  document.title = text ? `${text} · EventHub` : DEFAULT_TITLE;
 }
 
 function formatDate(value, includeTime = false) {
@@ -86,9 +93,17 @@ function shell(content) {
   return html` <header class="site-header">
       <div class="container nav">
         <a href="/" data-link class="brand"
-          ><span class="brand-mark">E</span><span>Event<span>Hub</span></span></a
+          ><span class="brand-mark" aria-hidden="true">E</span><span>Event<span>Hub</span></span></a
         >
-        <button class="mobile-menu" id="menu-toggle" aria-label="Toggle menu">☰</button>
+        <button
+          class="mobile-menu"
+          id="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="site-nav"
+        >
+          ☰
+        </button>
         <nav class="nav-links" id="site-nav">
           <a href="/events" data-link>Explore events</a>
           <a href="/verify-certificate" data-link>Verify certificate</a>
@@ -103,7 +118,7 @@ function shell(content) {
     <footer class="footer">
       <div class="container footer-grid">
         <div>
-          <div class="brand"><span class="brand-mark">E</span><span>EventHub</span></div>
+          <div class="brand"><span class="brand-mark" aria-hidden="true">E</span><span>EventHub</span></div>
           <p>One trusted place for campus events, attendance, proof and certificates.</p>
         </div>
         <div>
@@ -120,8 +135,8 @@ function shell(content) {
 
 function loading(message = "Loading…") {
   return html`<div class="container page">
-    <div class="empty">
-      <span>◌</span>
+    <div class="empty" role="status">
+      <span aria-hidden="true">◌</span>
       <p>${escapeHtml(message)}</p>
     </div>
   </div>`;
@@ -129,22 +144,20 @@ function loading(message = "Loading…") {
 
 function empty(message) {
   return html`<div class="empty">
-    <span>✦</span>
+    <span aria-hidden="true">✦</span>
     <p>${escapeHtml(message)}</p>
   </div>`;
 }
 
 function errorState(message = "We couldn't load this right now. Please try again.") {
-  return html`<div class="empty error">
-    <span>!</span>
+  return html`<div class="empty error" role="alert">
+    <span aria-hidden="true">!</span>
     <p>${escapeHtml(message)}</p>
   </div>`;
 }
 
 function eventCard(event) {
-  const image =
-    event.bannerUrl ||
-    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80";
+  const image = event.bannerUrl || PLACEHOLDER_IMAGE;
   return html`<a href="/events/${encodeURIComponent(event.slug)}" data-link class="event-card">
     <div class="event-image" style="background-image:url('${escapeHtml(image)}')">
       <span>${escapeHtml(event.mode)}</span>
@@ -158,7 +171,7 @@ function eventCard(event) {
         ><span>⌖ ${escapeHtml(event.venueName || "Online")}</span>
       </div>
       <div class="event-card-foot">
-        <span>${event.availableSeats ?? event.capacity ?? "—"} seats available</span
+        <span>${escapeHtml(event.availableSeats ?? event.capacity ?? "—")} seats available</span
         ><b>View event →</b>
       </div>
     </div>
@@ -173,6 +186,7 @@ async function getEvents(query = "") {
 }
 
 async function renderHome(sequence) {
+  setTitle("");
   const token = localStorage.getItem(TOKEN_KEY);
   let events = [];
   let profile = null;
@@ -213,6 +227,7 @@ async function renderHome(sequence) {
     return;
   }
   if (sequence !== renderSequence) return;
+
   const initials =
     profile?.fullName
       ?.split(/\s+/)
@@ -220,10 +235,18 @@ async function renderHome(sequence) {
       .map((part) => part[0])
       .join("")
       .toUpperCase() || "?";
-  const next = registrations.find((registration) => registration.event?.startAt);
+
+  // Only upcoming registrations, soonest first.
+  const now = Date.now();
+  const next = registrations
+    .filter((registration) => registration.event?.startAt)
+    .filter((registration) => new Date(registration.event.startAt).getTime() >= now)
+    .sort((a, b) => new Date(a.event.startAt) - new Date(b.event.startAt))[0];
+
   const present = registrations.filter(
     (registration) => registration.attendance?.status === "PRESENT",
   ).length;
+
   $("#app").html(
     shell(
       html` <section class="hero">
@@ -238,22 +261,22 @@ async function renderHome(sequence) {
               <div class="hero-actions">
                 <a href="/events" data-link class="button">Explore upcoming events →</a>
                 ${token
-                  ? html`<button class="button button-ghost" id="hero-sign-out">
+                  ? html`<button class="button button-ghost" id="hero-sign-out" type="button">
                       Sign out ↗
                     </button>`
                   : html`<a href="/login" data-link class="button button-ghost">Sign in →</a>`}
                 <a href="/register" data-link class="button button-ghost">Create your profile</a>
               </div>
               <div class="trust-row">
-                <span>✓</span><span>Attendance evidence is verified at the source</span>
+                <span aria-hidden="true">✓</span><span>Attendance evidence is verified at the source</span>
               </div>
             </div>
             <div class="hero-card">
               <div class="hero-card-top">
-                <span class="live-dot"></span><span>YOUR PARTICIPATION PASSPORT</span><b>▦</b>
+                <span class="live-dot" aria-hidden="true"></span><span>YOUR PARTICIPATION PASSPORT</span><b aria-hidden="true">▦</b>
               </div>
               <div class="passport-line">
-                <div class="avatar">${escapeHtml(initials)}</div>
+                <div class="avatar" aria-hidden="true">${escapeHtml(initials)}</div>
                 <div>
                   <strong>${escapeHtml(profile?.fullName || "Your passport")}</strong
                   ><small
@@ -279,7 +302,7 @@ async function renderHome(sequence) {
                 >
               </div>
               <div class="passport-event">
-                <b>▣</b>
+                <b aria-hidden="true">▣</b>
                 <div>
                   <small>${token ? "NEXT UP" : "GET STARTED"}</small
                   ><strong
@@ -289,7 +312,7 @@ async function renderHome(sequence) {
                     )}</strong
                   >
                 </div>
-                ${next ? "<span class='check'>✓</span>" : ""}
+                ${next ? html`<span class="check" aria-hidden="true">✓</span>` : ""}
               </div>
             </div>
           </div>
@@ -330,6 +353,7 @@ async function renderHome(sequence) {
 }
 
 async function renderEvents(sequence) {
+  setTitle("Events");
   $("#app").html(shell(loading("Finding events…")));
   const query = new URLSearchParams(location.search).get("search") || "";
   let events;
@@ -355,15 +379,17 @@ async function renderEvents(sequence) {
           <h1>Find your next event</h1>
           <p>Browse verified campus experiences and reserve your place.</p>
         </div>
-        <form class="search-bar" id="event-search">
-          <span>⌕</span
+        <form class="search-bar" id="event-search" role="search">
+          <label class="sr-only" for="event-search-input">Search events</label>
+          <span aria-hidden="true">⌕</span
           ><input
+            id="event-search-input"
             name="search"
             value="${escapeHtml(query)}"
             placeholder="Search by title, topic or city"
           /><button class="button">Search</button>
         </form>
-        <div class="results-line"><strong>${events.length}</strong> events found</div>
+        <div class="results-line" role="status"><strong>${events.length}</strong> events found</div>
         ${events.length
           ? html`<div class="event-grid">${events.map(eventCard).join("")}</div>`
           : empty("No events match your search.")}
@@ -372,7 +398,29 @@ async function renderEvents(sequence) {
   );
 }
 
+// Works out what the register button should show for this viewer.
+async function getMyRegistrationFor(eventId) {
+  if (!localStorage.getItem(TOKEN_KEY)) return null;
+  try {
+    const payload = await api("/registrations/me?limit=100");
+    return (payload.data || []).find((item) => (item.event?.id || item.eventId) === eventId) || null;
+  } catch {
+    return null;
+  }
+}
+
+function registrationButtonState(event, existing) {
+  const now = Date.now();
+  const opensAt = event.registrationStartAt ? new Date(event.registrationStartAt).getTime() : 0;
+  const closesAt = new Date(event.registrationEndAt || event.startAt).getTime();
+  if (existing) return { label: "You're registered", disabled: true };
+  if (now < opensAt) return { label: "Registration opens soon", disabled: true };
+  if (now > closesAt) return { label: "Registration closed", disabled: true };
+  return { label: "Register for this event", disabled: false };
+}
+
 async function renderEventDetails(slug, sequence) {
+  setTitle("Event");
   $("#app").html(shell(loading("Loading event…")));
   let event;
   try {
@@ -395,7 +443,12 @@ async function renderEventDetails(slug, sequence) {
     );
     return;
   }
-  const registered = new Date(event.registrationEndAt || event.startAt) >= new Date();
+  setTitle(event.title);
+
+  const existing = await getMyRegistrationFor(event.id);
+  if (sequence !== renderSequence) return;
+  const button = registrationButtonState(event, existing);
+
   $("#app").html(
     shell(
       html`<div class="event-detail">
@@ -417,32 +470,33 @@ async function renderEventDetails(slug, sequence) {
           <aside class="registration-card">
             <p class="eyebrow">EVENT DETAILS</p>
             <div class="detail-row">
-              <b>▣</b
+              <b aria-hidden="true">▣</b
               ><span><small>Date</small><strong>${formatDate(event.startAt, true)}</strong></span>
             </div>
             <div class="detail-row">
-              <b>⌖</b
+              <b aria-hidden="true">⌖</b
               ><span
                 ><small>Venue</small
                 ><strong>${escapeHtml(event.venueName || "Online")}</strong></span
               >
             </div>
             <div class="detail-row">
-              <b>◉</b
+              <b aria-hidden="true">◉</b
               ><span
                 ><small>Seats</small
-                ><strong>${event.availableSeats ?? event.capacity ?? "—"} available</strong></span
+                ><strong>${escapeHtml(event.availableSeats ?? event.capacity ?? "—")} available</strong></span
               >
             </div>
             <button
               class="button full"
               id="register-event"
+              type="button"
               data-event-id="${escapeHtml(event.id)}"
-              ${registered ? "" : "disabled"}
+              ${button.disabled ? "disabled" : ""}
             >
-              ${registered ? "Register for this event" : "Registration closed"}
+              ${escapeHtml(button.label)}
             </button>
-            <p class="form-message" id="register-message"></p>
+            <p class="form-message" id="register-message" role="status"></p>
           </aside>
         </div>
       </div>`,
@@ -452,12 +506,15 @@ async function renderEventDetails(slug, sequence) {
 
 function renderAuth(mode) {
   const login = mode === "login";
+  const justRegistered =
+    login && new URLSearchParams(location.search).get("registered") === "1";
+  setTitle(login ? "Sign in" : "Create account");
   $("#app").html(
     shell(
       html`<div class="auth-page">
         <div class="auth-panel">
           <a href="/" data-link class="brand"
-            ><span class="brand-mark">E</span><span>EventHub</span></a
+            ><span class="brand-mark" aria-hidden="true">E</span><span>EventHub</span></a
           >
           <p class="eyebrow">${login ? "WELCOME BACK" : "JOIN THE COMMUNITY"}</p>
           <h1>${login ? "Your next experience is waiting." : "Make your participation count."}</h1>
@@ -466,11 +523,14 @@ function renderAuth(mode) {
               ? "Sign in to manage tickets, attendance records and certificates."
               : "Create one secure profile for every event, attendance record and certificate."}
           </p>
-          <form id="auth-form">
+          ${justRegistered
+            ? html`<p class="success-text" role="status">Account created. Sign in to continue.</p>`
+            : ""}
+          <form id="auth-form" novalidate>
             ${login
               ? ""
               : html`<label>Full name<input required name="fullName" autocomplete="name" /></label
-                  ><label>Department<input name="department" /></label
+                  ><label>Department<input name="department" autocomplete="organization-title" /></label
                   ><label>Enrollment number<input name="enrollmentNumber" /></label>`}
             <label>Email<input required type="email" name="email" autocomplete="email" /></label>
             <label
@@ -491,8 +551,8 @@ function renderAuth(mode) {
                     name="confirmPassword"
                     autocomplete="new-password"
                 /></label>`}
-            <p class="form-error" id="auth-error"></p>
-            <button class="button full">${login ? "Sign in" : "Create account"}</button>
+            <p class="form-error" id="auth-error" role="alert"></p>
+            <button class="button full" type="submit">${login ? "Sign in" : "Create account"}</button>
           </form>
           <p class="switch-auth">
             ${login
@@ -500,7 +560,7 @@ function renderAuth(mode) {
               : html`Already have an account? <a href="/login" data-link>Sign in</a>`}
           </p>
         </div>
-        <div class="auth-art">
+        <div class="auth-art" aria-hidden="true">
           <span class="eyebrow">EVENTHUB / 2026</span>
           <blockquote>“The best record of an event is the change it makes in you.”</blockquote>
           <div class="art-stamp">✓ Verified participation, built in</div>
@@ -512,11 +572,12 @@ function renderAuth(mode) {
 }
 
 function renderVerify() {
+  setTitle("Verify certificate");
   $("#app").html(
     shell(
       html`<div class="container page narrow">
         <div class="center-intro">
-          <span class="icon-circle">✓</span>
+          <span class="icon-circle" aria-hidden="true">✓</span>
           <p class="eyebrow">PUBLIC VERIFICATION</p>
           <h1>Verify a certificate</h1>
           <p>Confirm an EventHub certificate using its certificate number.</p>
@@ -526,17 +587,17 @@ function renderVerify() {
             >Certificate number<input
               required
               name="number"
-              placeholder="CERT-EVT-2026-000001" /></label
+              placeholder="CERT-EVT-2026-000001"
+              autocomplete="off" /></label
           ><button class="button full">Verify certificate</button>
         </form>
-        <div id="verification-output"></div>
+        <div id="verification-output" role="status"></div>
       </div>`,
     ),
   );
 }
 
 async function loadWorkspaceData() {
-  const token = localStorage.getItem(TOKEN_KEY);
   const [profile, registrations, certificates, notifications] = await Promise.all([
     api("/auth/me").then((x) => x.data),
     api("/registrations/me?limit=50").then((x) => x.data || []),
@@ -557,7 +618,7 @@ function workspaceRows(section, data) {
           .map(
             (item) =>
               html`<div class="certificate-row">
-                <div class="certificate-seal">✓</div>
+                <div class="certificate-seal" aria-hidden="true">✓</div>
                 <div>
                   <strong>${escapeHtml(item.event?.title)}</strong
                   ><span>${escapeHtml(item.certificateNumber)}</span
@@ -565,6 +626,7 @@ function workspaceRows(section, data) {
                 </div>
                 <button
                   class="button button-small open-certificate"
+                  type="button"
                   data-url="${escapeHtml(item.certificateUrl)}"
                 >
                   Open
@@ -578,23 +640,24 @@ function workspaceRows(section, data) {
     const selected = data.registrations.find((item) => item.ticket) || data.registrations[0];
     return selected
       ? html`<div class="ticket-view">
-          <div class="qr-box" id="ticket-qr">▦</div>
+          <div class="qr-box" id="ticket-qr" aria-label="Ticket QR code area">▦</div>
           <div>
             <strong>${escapeHtml(selected.event?.title)}</strong>
             <p>
               ${formatDate(selected.event?.startAt)} ·
               ${escapeHtml(selected.event?.venueName || "Online")}
             </p>
-            <span class="status ${escapeHtml(selected.status.toLowerCase())}"
-              >${escapeHtml(selected.status)}</span
+            <span class="status ${escapeHtml(String(selected.status || "unknown").toLowerCase())}"
+              >${escapeHtml(selected.status || "UNKNOWN")}</span
             >${selected.status === "CONFIRMED"
               ? html`<button
                   class="button button-small ticket-issue"
+                  type="button"
                   data-registration-id="${escapeHtml(selected.id)}"
                 >
                   Show QR ticket
                 </button>`
-              : ""}<small class="ticket-token" id="ticket-note"
+              : ""}<small class="ticket-token" id="ticket-note" role="status"
               >Signed ticket tokens should never be shared.</small
             >
           </div>
@@ -607,7 +670,7 @@ function workspaceRows(section, data) {
         .map(
           (row) =>
             html`<div class="list-row large">
-              <div class="list-icon">▣</div>
+              <div class="list-icon" aria-hidden="true">▣</div>
               <div>
                 <strong
                   >${escapeHtml(
@@ -638,6 +701,7 @@ async function renderDashboard(section, sequence) {
     navigate("/login", true);
     return;
   }
+  setTitle("My workspace");
   $("#app").html(loading("Loading your workspace…"));
   let data;
   try {
@@ -656,6 +720,8 @@ async function renderDashboard(section, sequence) {
     ["certificates", "Certificates", "/dashboard/certificates"],
     ["notifications", "Notifications", "/dashboard/notifications"],
   ];
+  const activeLabel = links.find((item) => item[0] === active)?.[1] || "Overview";
+  const name = data.profile?.fullName || "Member";
   const content =
     active === "overview"
       ? html`<div class="stat-grid">
@@ -685,7 +751,7 @@ async function renderDashboard(section, sequence) {
           <div class="panel-heading">
             <div>
               <p class="eyebrow">YOUR RECORDS</p>
-              <h2>${escapeHtml(links.find((item) => item[0] === active)?.[1] || "Workspace")}</h2>
+              <h2>${escapeHtml(activeLabel)}</h2>
             </div>
           </div>
           ${workspaceRows(active, data)}
@@ -694,34 +760,36 @@ async function renderDashboard(section, sequence) {
     html`<div class="dashboard-shell">
       <aside class="dashboard-side" id="dashboard-side">
         <div class="dash-brand">
-          <a href="/" data-link><span class="brand-mark">E</span> EventHub</a
-          ><button id="close-dashboard-menu">×</button>
+          <a href="/" data-link><span class="brand-mark" aria-hidden="true">E</span> EventHub</a
+          ><button id="close-dashboard-menu" type="button" aria-label="Close menu">×</button>
         </div>
         <div class="user-chip">
-          <div class="avatar">${escapeHtml(data.profile.fullName.slice(0, 2).toUpperCase())}</div>
+          <div class="avatar" aria-hidden="true">${escapeHtml(name.slice(0, 2).toUpperCase())}</div>
           <div>
-            <strong>${escapeHtml(data.profile.fullName)}</strong
-            ><small>${escapeHtml(data.profile.roles?.[0] || "Student")}</small>
+            <strong>${escapeHtml(name)}</strong
+            ><small>${escapeHtml(data.profile?.roles?.[0] || "Student")}</small>
           </div>
         </div>
-        <nav>
+        <nav aria-label="Workspace">
           ${links
             .map(
               ([id, label, url]) =>
                 html`<a href="${url}" data-link class="${active === id ? "active" : ""}"
-                  ><span>•</span>${label}</a
+                  ><span aria-hidden="true">•</span>${label}</a
                 >`,
             )
             .join("")}
         </nav>
-        <button class="dash-logout" id="sign-out">↗ Sign out</button>
+        <button class="dash-logout" id="sign-out" type="button">↗ Sign out</button>
       </aside>
       <section class="dashboard-main">
         <div class="dash-top">
-          <button class="mobile-menu" id="open-dashboard-menu">☰</button>
+          <button class="mobile-menu" id="open-dashboard-menu" type="button" aria-label="Open menu"
+            >☰</button
+          >
           <div>
             <p class="eyebrow">MY WORKSPACE</p>
-            <h1>${escapeHtml(links.find((item) => item[0] === active)?.[1] || "Overview")}</h1>
+            <h1>${escapeHtml(activeLabel)}</h1>
           </div>
           <a href="/events" data-link class="button button-small">Explore events →</a>
         </div>
@@ -741,7 +809,7 @@ async function signOut() {
   navigate("/", true);
 }
 
-async function renderApp() {
+function renderApp() {
   const sequence = ++renderSequence;
   const path = location.pathname.replace(/\/+$/, "") || "/";
   if (path === "/") return renderHome(sequence);
@@ -763,7 +831,10 @@ $(document).on("click", "a[data-link]", function handleLink(event) {
   navigate(`${url.pathname}${url.search}`);
 });
 
-$(document).on("click", "#menu-toggle", () => $("#site-nav").toggleClass("open"));
+$(document).on("click", "#menu-toggle", function toggleMenu() {
+  const open = $("#site-nav").toggleClass("open").hasClass("open");
+  $(this).attr("aria-expanded", String(open));
+});
 $(document).on("click", "#sign-out, #hero-sign-out", signOut);
 $(document).on("click", "#open-dashboard-menu", () => $("#dashboard-side").addClass("open"));
 $(document).on("click", "#close-dashboard-menu", () => $("#dashboard-side").removeClass("open"));
@@ -779,7 +850,13 @@ $(document).on("submit", "#auth-form", async function handleAuth(event) {
   const mode = $(this).data("mode");
   const values = Object.fromEntries(new FormData(this));
   $("#auth-error").text("");
-  $(this).find("button").prop("disabled", true).text("Working…");
+
+  if (mode === "register" && values.password !== values.confirmPassword) {
+    $("#auth-error").text("Passwords do not match.");
+    return;
+  }
+
+  const button = $(this).find("button").prop("disabled", true).text("Working…");
   try {
     const payload = await api(`/auth/${mode}`, { method: "POST", data: values }, false);
     if (mode === "login") {
@@ -790,10 +867,7 @@ $(document).on("submit", "#auth-form", async function handleAuth(event) {
     }
   } catch (xhr) {
     $("#auth-error").text(apiError(xhr, "Unable to continue."));
-    $(this)
-      .find("button")
-      .prop("disabled", false)
-      .text(mode === "login" ? "Sign in" : "Create account");
+    button.prop("disabled", false).text(mode === "login" ? "Sign in" : "Create account");
   }
 });
 
@@ -808,11 +882,15 @@ $(document).on("click", "#register-event", async function registerEvent() {
       method: "POST",
       data: { answers: {} },
     });
-    $("#register-message").addClass("success-text").text("Registration submitted successfully.");
-    button.text("Registered");
+    $("#register-message").removeClass("form-error").addClass("success-text").text(
+      "Registration submitted successfully.",
+    );
+    button.text("You're registered");
   } catch (xhr) {
     button.prop("disabled", false).text("Register for this event");
-    $("#register-message").addClass("form-error").text(apiError(xhr, "Registration failed."));
+    $("#register-message").removeClass("success-text").addClass("form-error").text(
+      apiError(xhr, "Registration failed."),
+    );
   }
 });
 
@@ -825,7 +903,7 @@ $(document).on("submit", "#verify-form", async function verifyCertificate(event)
     output.html(
       result.valid
         ? html`<div class="verification-result valid">
-            <b>✓</b>
+            <b aria-hidden="true">✓</b>
             <div>
               <strong>Valid certificate</strong>
               <p>
@@ -836,7 +914,7 @@ $(document).on("submit", "#verify-form", async function verifyCertificate(event)
             </div>
           </div>`
         : html`<div class="verification-result invalid">
-            <b>×</b>
+            <b aria-hidden="true">×</b>
             <div>
               <strong>Certificate not found</strong>
               <p>Check the number and try again.</p>
@@ -846,7 +924,7 @@ $(document).on("submit", "#verify-form", async function verifyCertificate(event)
   } catch (xhr) {
     output.html(
       html`<div class="verification-result invalid">
-        <b>×</b>
+        <b aria-hidden="true">×</b>
         <div>
           <strong>Verification failed</strong>
           <p>${escapeHtml(apiError(xhr))}</p>
@@ -857,11 +935,11 @@ $(document).on("submit", "#verify-form", async function verifyCertificate(event)
 });
 
 $(document).on("click", ".ticket-issue", async function issueTicket() {
-  const note = $("#ticket-note").text("Issuing secure ticket…");
+  const note = $("#ticket-note").removeClass("form-error").text("Issuing secure ticket…");
+  const registrationId = $(this).data("registration-id");
   try {
-    const token = (
-      await api(`/registrations/${$(this).data("registration-id")}/ticket`, { method: "POST" })
-    ).data.ticketToken;
+    const token = (await api(`/registrations/${registrationId}/ticket`, { method: "POST" })).data
+      .ticketToken;
     const canvas = document.createElement("canvas");
     await QRCode.toCanvas(canvas, token, { width: 190, margin: 1 });
     $("#ticket-qr").empty().append(canvas);
@@ -871,14 +949,39 @@ $(document).on("click", ".ticket-issue", async function issueTicket() {
   }
 });
 
+// Only file URLs served by the API, or same-origin pages, may be opened.
+function isAllowedCertificateUrl(target) {
+  if (target.pathname.startsWith("/api/v1/files")) return true;
+  return target.origin === location.origin;
+}
+
 $(document).on("click", ".open-certificate", async function openCertificate() {
+  const row = $(this).closest(".certificate-row");
+  row.find(".row-error").remove();
+
+  let target;
+  try {
+    target = new URL($(this).data("url"), location.origin);
+  } catch {
+    row.append('<small class="form-error row-error">This certificate link is invalid.</small>');
+    return;
+  }
+  if (!isAllowedCertificateUrl(target)) {
+    row.append('<small class="form-error row-error">This certificate cannot be opened here.</small>');
+    return;
+  }
+
   const popup = window.open("about:blank", "_blank");
-  if (!popup) return;
-  const target = new URL($(this).data("url"), location.origin);
+  if (!popup) {
+    row.append('<small class="form-error row-error">Allow pop-ups to open your certificate.</small>');
+    return;
+  }
+
   if (!target.pathname.startsWith("/api/v1/files")) {
     popup.location.href = target.toString();
     return;
   }
+
   try {
     const response = await fetch(target, {
       credentials: "include",
@@ -886,11 +989,14 @@ $(document).on("click", ".open-certificate", async function openCertificate() {
     });
     if (!response.ok) throw new Error("Unable to open certificate");
     const blob = await response.blob();
-    popup.location.href = URL.createObjectURL(blob);
+    const objectUrl = URL.createObjectURL(blob);
+    popup.location.href = objectUrl;
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   } catch {
     popup.close();
+    row.append('<small class="form-error row-error">Unable to open this certificate right now.</small>');
   }
 });
 
-window.addEventListener("popstate", renderApp);
+window.addEventListener("popstate", () => renderApp());
 renderApp();

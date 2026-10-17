@@ -35,5 +35,5 @@ jobs:
         run: npm test --prefix server
       - name: Validate schema and API startup
         env:
-          DATABASE_URL: postgresql://eventhub:eventhub@127.0.0.1:5432/ci_validation?schema=public
+          DATABASE_URL: mongodb://eventhub:eventhub@127.0.0.1:27017/ci_validation?replicaSet=rs0
         run: npm run verify --prefix server

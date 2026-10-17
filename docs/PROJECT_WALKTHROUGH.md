@@ -22,7 +22,7 @@ Vanilla JS + jQuery         Vanilla JS + jQuery
            \  REST API      /
             Express (5000)
                  |
-      Prisma ORM + PostgreSQL (5432)
+      Prisma ORM + MongoDB (27017)
                  |
    Roles, events, registrations, tickets,
    attendance, proofs, certificates, audit logs
@@ -58,10 +58,10 @@ The database contains audit logs, login-audit support, proof status, certificate
 
 ## 4. Demo flow for review
 
-Use this sequence only after PostgreSQL is running and the database has been migrated/seeded.
+Use this sequence only after MongoDB is running and the database has been pushed/seeded.
 
-1. Start PostgreSQL with `docker compose up -d postgres`.
-2. Create `server/.env` from `.env.example`, then run `npm run db:migrate` and `npm run db:seed`.
+1. Start MongoDB with `docker compose up -d mongodb mongodb-init`. The init service turns the container into the `rs0` replica set that transactions require.
+2. Create `server/.env` from `.env.example`, then run `npm run db:push` and `npm run db:seed`.
 3. Start API, public client and admin client using the root commands from the README.
 4. Sign in to the admin console and create an event with a capacity and registration window.
 5. Publish the event. Show that a draft event is not available to public registration.
@@ -81,8 +81,9 @@ The Jenkins webhook needs an online Jenkins server. `tools/Keep-JenkinsWebhookOn
 
 | Question                                | Short answer                                                                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Why Prisma?                             | It gives a typed database client and migrations while keeping PostgreSQL as the actual relational store.                                             |
+| Why Prisma?                             | It gives a typed database client and a single schema definition that is validated in CI, so the MongoDB collections and the API stay in sync.                                             |
 | Why use a transaction for registration? | Event capacity, registration creation and ticket creation must not partially succeed or race with another request.                                   |
+| Why does registration retry on MongoDB?   | MongoDB aborts a transaction that collides on a shared document, so `withTransaction` retries with backoff instead of failing the request.               |
 | Why store a ticket hash?                | If the database is exposed, an attacker should not receive usable ticket tokens.                                                                     |
 | Why two frontends?                      | Student actions and administrator operations have different permissions and workflows.                                                               |
 | What happens if Jenkins is stopped?     | GitHub cannot wake an offline local computer. The sign-in supervisor keeps Jenkins/tunnel online after login, and Jenkins also polls as a fallback.  |
@@ -91,5 +92,5 @@ The Jenkins webhook needs an online Jenkins server. `tools/Keep-JenkinsWebhookOn
 ## 7. Honest limitations
 
 - A localhost.run URL is temporary; the supervisor updates GitHub when it changes, but the laptop must be powered on and signed in.
-- The verification health check does not exercise a real PostgreSQL transaction; database workflow testing needs a running test database.
+- The verification health check does not exercise a real MongoDB transaction; database workflow testing needs a running test database, and the deployment must be a replica set.
 - Email and storage providers are environment-driven and need real provider credentials for production delivery.

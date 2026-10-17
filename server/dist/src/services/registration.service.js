@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { withTransaction } from "../prisma-client.js";
 import { hashToken, opaqueToken, sequenceValue } from "../utils/crypto.js";
 import { AppError } from "../utils/http.js";
 import { notifyUsers } from "./notification.service.js";
@@ -15,7 +16,7 @@ function isConfirmed(status) {
   return ["CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "COMPLETED"].includes(status);
 }
 export async function registerForEvent(eventId, userId, answers) {
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await withTransaction(prisma, async (tx) => {
     const event = await tx.event.findFirst({ where: { id: eventId, deletedAt: null } });
     if (!event) throw new AppError("Event not found", 404, "EVENT_NOT_FOUND");
     const now = new Date();
@@ -160,7 +161,7 @@ export async function issueTicket(id, userId) {
       "TICKET_NOT_AVAILABLE",
     );
   const token = opaqueToken(32);
-  await prisma.$transaction(async (tx) => {
+  await withTransaction(prisma, async (tx) => {
     const existingTicket = await tx.ticket.findUnique({ where: { registrationId: id } });
     const ticketData = {
       tokenHash: hashToken(token),
@@ -182,7 +183,7 @@ export async function cancelRegistration(id, userId) {
   const registration = await getRegistration(id, userId);
   if (["CANCELLED", "CHECKED_OUT", "COMPLETED"].includes(registration.status))
     throw new AppError("This registration cannot be cancelled", 409, "INVALID_REGISTRATION_STATE");
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await withTransaction(prisma, async (tx) => {
     const row = await tx.registration.update({
       where: { id },
       data: { status: "CANCELLED", cancelledAt: new Date() },

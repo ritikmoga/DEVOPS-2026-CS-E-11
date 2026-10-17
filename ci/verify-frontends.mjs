@@ -64,19 +64,25 @@ const escapeXml = (value) =>
 
 const cdata = (value) => `<![CDATA[${value.replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
 const failures = results.filter((result) => !result.passed).length;
-const totalSeconds = results.reduce((sum, result) => sum + result.durationMs, 0) / 1000;
 
+// The generated report is committed back to `main` by the Jenkins job, so it has
+// to be deterministic. Per-run durations and the content-hashed asset names that
+// Vite prints change on every build even when nothing changed, which meant every
+// poll produced a diff, which produced a commit, which triggered another build.
+// Timings stay in the console log and the archived build instead.
+
+// The Jenkins "Prepare reports" stage deletes this directory before the checkout,
+// so it has to be recreated here.
 mkdirSync(resolve(root, "reports"), { recursive: true });
 
 const junit = [
   '<?xml version="1.0" encoding="UTF-8"?>',
-  `<testsuite name="Frontend CI" tests="${results.length}" failures="${failures}" time="${totalSeconds.toFixed(3)}">`,
+  `<testsuite name="Frontend CI" tests="${results.length}" failures="${failures}">`,
   ...results.map((result) => {
-    const seconds = (result.durationMs / 1000).toFixed(3);
     const failure = result.passed
       ? ""
       : `<failure message="${escapeXml(`${result.name} failed`)}">${cdata(result.output)}</failure>`;
-    return `  <testcase classname="${escapeXml(result.directory)}" name="${escapeXml(result.name)}" time="${seconds}">${failure}<system-out>${cdata(result.output)}</system-out></testcase>`;
+    return `  <testcase classname="${escapeXml(result.directory)}" name="${escapeXml(result.name)}">${failure}</testcase>`;
   }),
   "</testsuite>",
   "",
@@ -88,23 +94,22 @@ const markdown = [
   `- Commit: ${process.env.GIT_COMMIT || process.env.GITHUB_SHA || "local"}`,
   `- Result: **${failures === 0 ? "PASSED" : "FAILED"}**`,
   "",
-  "| Check | Result | Duration |",
-  "| --- | --- | ---: |",
-  ...results.map(
-    (result) =>
-      `| ${result.name} | ${result.passed ? "✅ Passed" : "❌ Failed"} | ${(result.durationMs / 1000).toFixed(2)}s |`,
-  ),
+  "| Check | Result |",
+  "| --- | --- |",
+  ...results.map((result) => `| ${result.name} | ${result.passed ? "✅ Passed" : "❌ Failed"} |`),
   "",
-  "## Output",
+  ...(failures > 0
+    ? [
+        "## Failure output",
+        "",
+        ...results.flatMap((result) =>
+          result.passed
+            ? []
+            : [`### ${result.name}`, "", "```text", result.output || "(no output)", "```", ""],
+        ),
+      ]
+    : []),
   "",
-  ...results.flatMap((result) => [
-    `### ${result.name}`,
-    "",
-    "```text",
-    result.output || "(no output)",
-    "```",
-    "",
-  ]),
 ].join("\n");
 
 writeFileSync(resolve(root, "reports/frontend-junit.xml"), junit);

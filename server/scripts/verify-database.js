@@ -7,7 +7,7 @@ if (!process.env.DATABASE_URL) {
   }
 
   process.env.DATABASE_URL =
-    "postgresql://eventhub:eventhub@localhost:5432/event_management?schema=public";
+    "mongodb://eventhub:eventhub@localhost:27017/event_management?replicaSet=rs0";
 }
 
 const prisma = new PrismaClient();
@@ -26,7 +26,7 @@ try {
   }
 
   console.log(JSON.stringify({ roles, permissions, users, events, registrations }, null, 2));
-  console.log("PostgreSQL database verification passed.");
+  console.log("MongoDB database verification passed.");
 } finally {
   await prisma.$disconnect();
 }

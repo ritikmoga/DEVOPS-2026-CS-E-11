@@ -7,5 +7,7 @@ COPY frontend/admin-client/ ./
 RUN npm run build
 
 FROM nginx:1.27-alpine
+COPY frontend/admin-client/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+ENV API_UPSTREAM=host.docker.internal:5000
 EXPOSE 80
