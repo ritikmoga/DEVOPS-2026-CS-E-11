@@ -1,6 +1,7 @@
 import $ from "jquery";
 import config from "./config.json";
 import "./styles.css";
+import "./a11y.css";
 
 const API_URL = window.EVENTHUB_API_URL || config.apiBaseUrl;
 const PUBLIC_APP_URL = window.EVENTHUB_PUBLIC_URL || config.publicAppUrl;
