@@ -29,33 +29,6 @@
 // app.use(errorHandler);
 // //# sourceMappingURL=app.js.map
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -66,8 +39,13 @@ import pinoHttp from "pino-http";
 import router from "./routes/index.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/error.js";
+import { prisma } from "./prisma.js";
 
 export const app = express();
+
+// Trust only explicitly configured reverse-proxy hops. Leaving this at zero
+// prevents clients from spoofing X-Forwarded-For in direct deployments.
+app.set("trust proxy", env.TRUST_PROXY);
 
 /* -------------------------------------------------------
    Security
@@ -78,17 +56,14 @@ app.disable("x-powered-by");
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
+  }),
 );
 
 /* -------------------------------------------------------
    CORS
 ------------------------------------------------------- */
 
-const allowedOrigins = [
-  env.PUBLIC_APP_URL,
-  env.ADMIN_APP_URL,
-].filter(Boolean);
+const allowedOrigins = [env.PUBLIC_APP_URL, env.ADMIN_APP_URL].filter(Boolean);
 
 app.use(
   cors({
@@ -108,20 +83,10 @@ app.use(
 
     credentials: true,
 
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-  })
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
 );
 
 /* -------------------------------------------------------
@@ -131,14 +96,14 @@ app.use(
 app.use(
   express.json({
     limit: "1mb",
-  })
+  }),
 );
 
 app.use(
   express.urlencoded({
     extended: true,
     limit: "1mb",
-  })
+  }),
 );
 
 app.use(cookieParser());
@@ -152,7 +117,7 @@ app.use(
     autoLogging: {
       ignore: (req) => req.url === "/health",
     },
-  })
+  }),
 );
 
 /* -------------------------------------------------------
@@ -189,6 +154,15 @@ app.get("/health", (_req, res) => {
       timestamp: new Date().toISOString(),
     },
   });
+});
+
+app.get("/readyz", async (_req, res, next) => {
+  try {
+    await prisma.$runCommandRaw({ ping: 1 });
+    res.status(200).json({ success: true, data: { status: "ready" } });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /* -------------------------------------------------------

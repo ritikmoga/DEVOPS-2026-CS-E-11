@@ -1,13 +1,34 @@
-import { defineConfig } from "vite";
 
-const API_TARGET = process.env.VITE_API_TARGET || "http://localhost:5000";
+import { defineConfig, loadEnv } from "vite";
 
-const proxy = {
-  "/api": { target: API_TARGET, changeOrigin: true, secure: false },
-  "/health": { target: API_TARGET, changeOrigin: true, secure: false },
-};
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
 
-export default defineConfig({
-  server: { host: true, port: 5174, proxy },
-  preview: { host: true, port: 4174, proxy },
+  const apiTarget = env.VITE_API_TARGET || "http://localhost:5000";
+
+  const proxyConfig = {
+    target: apiTarget,
+    changeOrigin: true,
+    secure: false,
+  };
+
+  const proxy = {
+    "/api": { ...proxyConfig },
+    "/health": { ...proxyConfig },
+  };
+
+  return {
+    server: {
+      host: "0.0.0.0",
+      port: 5174,
+      strictPort: true,
+      proxy,
+    },
+    preview: {
+      host: "0.0.0.0",
+      port: 4174,
+      strictPort: true,
+      proxy,
+    },
+  };
 });

@@ -1,14 +1,27 @@
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta
+      name="description"
+      content="EventHub Admin — event management dashboard."
+    />
+
     <title>EventHub Admin</title>
   </head>
+
   <body>
-    <div id="app"></div>
-    <noscript>EventHub Admin needs JavaScript enabled in your browser.</noscript>
+    <div id="app" aria-live="polite"></div>
+
+    <noscript>
+      <p>EventHub Admin requires JavaScript to be enabled in your browser.</p>
+    </noscript>
+
     <script type="module" src="/src/app.js"></script>
   </body>
 </html>

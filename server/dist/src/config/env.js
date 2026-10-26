@@ -2,7 +2,8 @@ import "dotenv/config";
 import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().default(5000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
   DATABASE_URL: z
     .string()
     .default("mongodb://eventhub:eventhub@localhost:27017/event_management?replicaSet=rs0"),
@@ -41,6 +42,16 @@ if (parsed.NODE_ENV === "production") {
   }
   if (parsed.JWT_ACCESS_SECRET === parsed.JWT_REFRESH_SECRET) {
     throw new Error("JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different in production");
+  }
+  const insecureSecrets = new Set([
+    "development-access-secret-change-me",
+    "development-refresh-secret-change-me",
+  ]);
+  if (
+    insecureSecrets.has(parsed.JWT_ACCESS_SECRET) ||
+    insecureSecrets.has(parsed.JWT_REFRESH_SECRET)
+  ) {
+    throw new Error("Production JWT secrets must not use the development defaults");
   }
 }
 export const env = parsed;

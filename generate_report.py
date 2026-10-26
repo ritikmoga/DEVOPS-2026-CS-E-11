@@ -142,8 +142,7 @@ def create_charts(students, timeline_activity, interval):
     # 2. Net LOC Chart
     if authors:
         net_loc = [students[a]["added"] - students[a]["deleted"] for a in authors]
-        colors_list = ['#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F']
-        ax2.bar(authors, net_loc, color=colors_list[:len(authors)], width=0.45)
+        ax2.bar(authors, net_loc, width=0.45)
         ax2.set_title("Net Lines of Code Written", fontsize=10, fontweight='bold')
         ax2.set_ylabel("LOC (Added - Deleted)")
         ax2.grid(axis='y', linestyle='--', alpha=0.5)
@@ -312,7 +311,9 @@ def generate_pdf(interval="weekly"):
             log_table.setStyle(TableStyle(t_style))
             student_section.append(log_table)
             student_section.append(Spacer(1, 5))
-            story.append(KeepTogether(student_section))
+            story.append(student_section[0])
+            story.append(log_table)
+            story.append(Spacer(1, 5))
 
     doc.build(story)
     print(f"\n[SUCCESS] Generated: {doc_name}")

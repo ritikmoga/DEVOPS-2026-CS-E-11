@@ -12,7 +12,7 @@
     "test": "node tests/api.contract.test.js",
     "lint": "eslint --config ../eslint.config.mjs \"dist/src/**/*.js\" \"dist/prisma/**/*.js\" \"tests/**/*.js\"",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
-    "prisma:validate": "prisma validate --schema prisma/schema.prisma",
+    "prisma:validate": "node scripts/prisma-validate.js",
     "prisma:push": "prisma db push --schema prisma/schema.prisma --skip-generate",
     "db:verify": "node scripts/verify-database.js",
     "verify": "npm run prisma:generate && npm run prisma:validate && node ../ci/verify-backend.mjs"

@@ -118,7 +118,9 @@ function shell(content) {
     <footer class="footer">
       <div class="container footer-grid">
         <div>
-          <div class="brand"><span class="brand-mark" aria-hidden="true">E</span><span>EventHub</span></div>
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">E</span><span>EventHub</span>
+          </div>
           <p>One trusted place for campus events, attendance, proof and certificates.</p>
         </div>
         <div>
@@ -268,12 +270,14 @@ async function renderHome(sequence) {
                 <a href="/register" data-link class="button button-ghost">Create your profile</a>
               </div>
               <div class="trust-row">
-                <span aria-hidden="true">✓</span><span>Attendance evidence is verified at the source</span>
+                <span aria-hidden="true">✓</span
+                ><span>Attendance evidence is verified at the source</span>
               </div>
             </div>
             <div class="hero-card">
               <div class="hero-card-top">
-                <span class="live-dot" aria-hidden="true"></span><span>YOUR PARTICIPATION PASSPORT</span><b aria-hidden="true">▦</b>
+                <span class="live-dot" aria-hidden="true"></span
+                ><span>YOUR PARTICIPATION PASSPORT</span><b aria-hidden="true">▦</b>
               </div>
               <div class="passport-line">
                 <div class="avatar" aria-hidden="true">${escapeHtml(initials)}</div>
@@ -403,7 +407,9 @@ async function getMyRegistrationFor(eventId) {
   if (!localStorage.getItem(TOKEN_KEY)) return null;
   try {
     const payload = await api("/registrations/me?limit=100");
-    return (payload.data || []).find((item) => (item.event?.id || item.eventId) === eventId) || null;
+    return (
+      (payload.data || []).find((item) => (item.event?.id || item.eventId) === eventId) || null
+    );
   } catch {
     return null;
   }
@@ -484,7 +490,9 @@ async function renderEventDetails(slug, sequence) {
               <b aria-hidden="true">◉</b
               ><span
                 ><small>Seats</small
-                ><strong>${escapeHtml(event.availableSeats ?? event.capacity ?? "—")} available</strong></span
+                ><strong
+                  >${escapeHtml(event.availableSeats ?? event.capacity ?? "—")} available</strong
+                ></span
               >
             </div>
             <button
@@ -506,8 +514,7 @@ async function renderEventDetails(slug, sequence) {
 
 function renderAuth(mode) {
   const login = mode === "login";
-  const justRegistered =
-    login && new URLSearchParams(location.search).get("registered") === "1";
+  const justRegistered = login && new URLSearchParams(location.search).get("registered") === "1";
   setTitle(login ? "Sign in" : "Create account");
   $("#app").html(
     shell(
@@ -530,7 +537,8 @@ function renderAuth(mode) {
             ${login
               ? ""
               : html`<label>Full name<input required name="fullName" autocomplete="name" /></label
-                  ><label>Department<input name="department" autocomplete="organization-title" /></label
+                  ><label
+                    >Department<input name="department" autocomplete="organization-title" /></label
                   ><label>Enrollment number<input name="enrollmentNumber" /></label>`}
             <label>Email<input required type="email" name="email" autocomplete="email" /></label>
             <label
@@ -552,7 +560,9 @@ function renderAuth(mode) {
                     autocomplete="new-password"
                 /></label>`}
             <p class="form-error" id="auth-error" role="alert"></p>
-            <button class="button full" type="submit">${login ? "Sign in" : "Create account"}</button>
+            <button class="button full" type="submit">
+              ${login ? "Sign in" : "Create account"}
+            </button>
           </form>
           <p class="switch-auth">
             ${login
@@ -784,9 +794,9 @@ async function renderDashboard(section, sequence) {
       </aside>
       <section class="dashboard-main">
         <div class="dash-top">
-          <button class="mobile-menu" id="open-dashboard-menu" type="button" aria-label="Open menu"
-            >☰</button
-          >
+          <button class="mobile-menu" id="open-dashboard-menu" type="button" aria-label="Open menu">
+            ☰
+          </button>
           <div>
             <p class="eyebrow">MY WORKSPACE</p>
             <h1>${escapeHtml(activeLabel)}</h1>
@@ -882,15 +892,17 @@ $(document).on("click", "#register-event", async function registerEvent() {
       method: "POST",
       data: { answers: {} },
     });
-    $("#register-message").removeClass("form-error").addClass("success-text").text(
-      "Registration submitted successfully.",
-    );
+    $("#register-message")
+      .removeClass("form-error")
+      .addClass("success-text")
+      .text("Registration submitted successfully.");
     button.text("You're registered");
   } catch (xhr) {
     button.prop("disabled", false).text("Register for this event");
-    $("#register-message").removeClass("success-text").addClass("form-error").text(
-      apiError(xhr, "Registration failed."),
-    );
+    $("#register-message")
+      .removeClass("success-text")
+      .addClass("form-error")
+      .text(apiError(xhr, "Registration failed."));
   }
 });
 
@@ -967,13 +979,17 @@ $(document).on("click", ".open-certificate", async function openCertificate() {
     return;
   }
   if (!isAllowedCertificateUrl(target)) {
-    row.append('<small class="form-error row-error">This certificate cannot be opened here.</small>');
+    row.append(
+      '<small class="form-error row-error">This certificate cannot be opened here.</small>',
+    );
     return;
   }
 
   const popup = window.open("about:blank", "_blank");
   if (!popup) {
-    row.append('<small class="form-error row-error">Allow pop-ups to open your certificate.</small>');
+    row.append(
+      '<small class="form-error row-error">Allow pop-ups to open your certificate.</small>',
+    );
     return;
   }
 
@@ -994,7 +1010,9 @@ $(document).on("click", ".open-certificate", async function openCertificate() {
     setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   } catch {
     popup.close();
-    row.append('<small class="form-error row-error">Unable to open this certificate right now.</small>');
+    row.append(
+      '<small class="form-error row-error">Unable to open this certificate right now.</small>',
+    );
   }
 });
 

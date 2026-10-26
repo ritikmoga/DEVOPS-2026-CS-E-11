@@ -128,7 +128,9 @@ function showToast(message, type = "success") {
 }
 
 function loading(message = "Loading admin workspace…") {
-  return html`<div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>${escapeHtml(message)}</div>`;
+  return html`<div class="loading" role="status">
+    <span class="spinner" aria-hidden="true"></span>${escapeHtml(message)}
+  </div>`;
 }
 
 function errorState(message) {
@@ -235,9 +237,7 @@ function renderLogin() {
       <div class="login-aside">
         <p class="kicker">CONTROL WITH CONFIDENCE</p>
         <h2>Every decision has a trace.</h2>
-        <p>
-          Attendance, proof decisions and certificates are connected to an audit trail.
-        </p>
+        <p>Attendance, proof decisions and certificates are connected to an audit trail.</p>
       </div>
     </div>`,
   );
@@ -264,8 +264,7 @@ function shell(profile, content) {
         ${navItems
           .map(([url, label, icon]) => {
             const active = url === "/dashboard" ? path === url : path.startsWith(url);
-            const badge =
-              label === "Proof review" ? html`<i id="proof-badge" hidden></i>` : "";
+            const badge = label === "Proof review" ? html`<i id="proof-badge" hidden></i>` : "";
             return html`<a
               href="${url}"
               data-link
@@ -280,7 +279,9 @@ function shell(profile, content) {
     </aside>
     <section class="admin-content">
       <header class="admin-top">
-        <button class="mobile-toggle" id="open-menu" type="button" aria-label="Open menu">☰</button>
+        <button class="mobile-toggle" id="open-menu" type="button" aria-label="Open menu">
+          ☰
+        </button>
         <div class="crumb">EVENTHUB <span aria-hidden="true">/</span> OPERATIONS</div>
         <div class="top-actions">
           <a class="public-site-link" href="${escapeHtml(PUBLIC_APP_URL)}">Public site</a
@@ -297,7 +298,9 @@ async function refreshProofBadge() {
   try {
     const data = (await api("/admin/analytics/overview")).data;
     const count = Number(data?.pendingProofs) || 0;
-    $("#proof-badge").text(count).prop("hidden", count === 0);
+    $("#proof-badge")
+      .text(count)
+      .prop("hidden", count === 0);
   } catch {
     $("#proof-badge").prop("hidden", true);
   }
@@ -317,14 +320,23 @@ async function renderOverview() {
     fetchApiHealth(),
   ]);
   return html`<div class="page-content">
-    ${pageTitle("OPERATIONS / TODAY", greeting(), "Here is what needs your attention across the platform.")}
+    ${pageTitle(
+      "OPERATIONS / TODAY",
+      greeting(),
+      "Here is what needs your attention across the platform.",
+    )}
     <div class="metrics">
       ${metric("Total events", data.totalEvents ?? 0, "All lifecycle states")}
       ${metric("Upcoming", data.upcomingEvents ?? 0, "Published events")}
       ${metric("Registrations", data.registrations ?? 0, "All participants")}
       ${metric("Pending proofs", data.pendingProofs ?? 0, "Includes flagged")}
       ${metric("Today's check-ins", data.todayCheckins ?? 0, "Live attendance")}
-      ${metric("API status", apiState, "Reported by the server health check", apiState === "Operational")}
+      ${metric(
+        "API status",
+        apiState,
+        "Reported by the server health check",
+        apiState === "Operational",
+      )}
     </div>
     <div class="dashboard-grid">
       <section class="panel chart-panel">
@@ -575,11 +587,16 @@ function renderAttendance() {
     <div class="scanner-grid">
       <section class="panel">
         <div class="mode-tabs" role="group" aria-label="Attendance mode">
-          <button class="active attendance-mode" type="button" data-mode="check-in" aria-pressed="true"
-            >Check in</button
-          ><button class="attendance-mode" type="button" data-mode="check-out" aria-pressed="false"
-            >Check out</button
+          <button
+            class="active attendance-mode"
+            type="button"
+            data-mode="check-in"
+            aria-pressed="true"
           >
+            Check in</button
+          ><button class="attendance-mode" type="button" data-mode="check-out" aria-pressed="false">
+            Check out
+          </button>
         </div>
         <form id="attendance-form" data-mode="check-in">
           <label
@@ -631,7 +648,8 @@ async function renderProofs() {
                   <td>
                     <strong>${escapeHtml(row.originalFileName)}</strong
                     ><small class="block-muted"
-                      >${escapeHtml(row.mimeType)} · ${Math.round((row.fileSize || 0) / 1024)} KB</small
+                      >${escapeHtml(row.mimeType)} · ${Math.round((row.fileSize || 0) / 1024)}
+                      KB</small
                     >
                   </td>
                   <td>
@@ -701,14 +719,18 @@ async function renderCertificates() {
                 ${completed
                   .map(
                     (event) =>
-                      html`<option value="${escapeHtml(event.id)}">${escapeHtml(event.title)}</option>`,
+                      html`<option value="${escapeHtml(event.id)}">
+                        ${escapeHtml(event.title)}
+                      </option>`,
                   )
                   .join("")}
               </select>
               <button class="primary" id="generate-certificates" type="button" disabled>
                 Generate certificates
               </button>`
-          : html`<p class="muted">No completed events yet. Certificates can be generated once an event is completed.</p>`}
+          : html`<p class="muted">
+              No completed events yet. Certificates can be generated once an event is completed.
+            </p>`}
         <p id="certificate-result" role="status"></p>
       </div>
     </section>
@@ -718,7 +740,11 @@ async function renderCertificates() {
 async function renderUsers() {
   const rows = (await api("/admin/users?limit=50")).data || [];
   return html`<div class="page-content">
-    ${pageTitle("IDENTITY & ACCESS", "Users", "Manage active accounts and inspect database-driven roles.")}
+    ${pageTitle(
+      "IDENTITY & ACCESS",
+      "Users",
+      "Manage active accounts and inspect database-driven roles.",
+    )}
     <section class="panel table-panel">
       <table>
         <thead>
@@ -737,7 +763,9 @@ async function renderUsers() {
               return html`<tr>
                 <td>
                   <div class="person">
-                    <div class="mini-avatar" aria-hidden="true">${escapeHtml(initials(user.fullName))}</div>
+                    <div class="mini-avatar" aria-hidden="true">
+                      ${escapeHtml(initials(user.fullName))}
+                    </div>
                     <span
                       ><strong>${escapeHtml(user.fullName || "Unnamed user")}</strong
                       ><small>${escapeHtml(user.email)}</small></span
@@ -814,7 +842,11 @@ function renderReports() {
     ["Registration report", "Participant status and attendance evidence", "registrations"],
   ];
   return html`<div class="page-content">
-    ${pageTitle("EXPORT CENTER", "Reports", "Download operational data for institutional reporting.")}
+    ${pageTitle(
+      "EXPORT CENTER",
+      "Reports",
+      "Download operational data for institutional reporting.",
+    )}
     <div class="report-grid">
       ${reports
         .map(
@@ -906,7 +938,9 @@ function renderSettings() {
         <div class="setting-row">
           <div>
             <strong>Document data</strong>
-            <p>Users, events, registrations and audit records are stored in MongoDB through Prisma.</p>
+            <p>
+              Users, events, registrations and audit records are stored in MongoDB through Prisma.
+            </p>
           </div>
         </div>
         <div class="setting-row">
@@ -1131,9 +1165,8 @@ $(document).on("submit", "#attendance-form", async function recordAttendance(eve
   const token = String(new FormData(this).get("token") || "").trim();
   const button = $(this).find("button").prop("disabled", true).text("Validating…");
   try {
-    const result = (
-      await api(`/admin/attendance/${mode}`, { method: "POST", data: { token } })
-    ).data;
+    const result = (await api(`/admin/attendance/${mode}`, { method: "POST", data: { token } }))
+      .data;
     $("#attendance-result").html(
       html`<div class="success-icon" aria-hidden="true">✓</div>
         <p class="kicker">${escapeHtml(mode.toUpperCase())} RECORDED</p>
@@ -1148,7 +1181,9 @@ $(document).on("submit", "#attendance-form", async function recordAttendance(eve
   } catch (xhr) {
     $("#attendance-error").text(apiError(xhr, "Ticket validation failed."));
   } finally {
-    button.prop("disabled", false).text(mode === "check-in" ? "Record check-in" : "Record check-out");
+    button
+      .prop("disabled", false)
+      .text(mode === "check-in" ? "Record check-in" : "Record check-out");
   }
 });
 
