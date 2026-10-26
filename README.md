@@ -263,7 +263,7 @@ For a detailed explanation of the project architecture, development flow, demons
 
 EventHub brings multiple campus-event workflows into a **single centralized platform**, reducing manual coordination between students and administrators.
 
-Instead of managing registrations, attendance, proofs, and certificates across disconnected systems, EventHub provides one structured workflow backed by a relational database and REST API.
+- **MongoDB-backed data storage:** Uses MongoDB with Prisma ORM for application data and database access.
 
 ---
 
