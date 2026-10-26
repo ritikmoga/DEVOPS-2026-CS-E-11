@@ -311,7 +311,9 @@ def generate_pdf(interval="weekly"):
             log_table.setStyle(TableStyle(t_style))
             student_section.append(log_table)
             student_section.append(Spacer(1, 5))
-            story.append(KeepTogether(student_section))
+            story.append(student_section[0])
+            story.append(log_table)
+            story.append(Spacer(1, 5))
 
     doc.build(story)
     print(f"\n[SUCCESS] Generated: {doc_name}")
