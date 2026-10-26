@@ -10,34 +10,34 @@ The platform is built using a lightweight web stack with a clear separation betw
 
 ## ✨ Key Highlights
 
-* 🎪 **Campus Event Management**
-* 📝 **Student Event Registration**
-* 📊 **Attendance Tracking**
-* 📎 **Event Proof Submission**
-* ✅ **Proof Verification**
-* 🏆 **Certificate Management**
-* 🔐 **Administrative Operations Console**
-* 📡 **REST API with Express**
-* 🗄️ **MongoDB Database**
-* 🔄 **Prisma ORM**
-* 🧩 **jQuery-powered DOM and AJAX interactions**
-* 📦 **JSON-based configuration**
-* 🐳 **Docker-based MongoDB replica-set setup**
+- 🎪 **Campus Event Management**
+- 📝 **Student Event Registration**
+- 📊 **Attendance Tracking**
+- 📎 **Event Proof Submission**
+- ✅ **Proof Verification**
+- 🏆 **Certificate Management**
+- 🔐 **Administrative Operations Console**
+- 📡 **REST API with Express**
+- 🗄️ **MongoDB Database**
+- 🔄 **Prisma ORM**
+- 🧩 **jQuery-powered DOM and AJAX interactions**
+- 📦 **JSON-based configuration**
+- 🐳 **Docker-based MongoDB replica-set setup**
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer               | Technology         |
-| ------------------- | ------------------ |
-| 🎨 Frontend         | HTML5, CSS3        |
+| Layer                | Technology         |
+| -------------------- | ------------------ |
+| 🎨 Frontend          | HTML5, CSS3        |
 | ⚡ Client-side Logic | Vanilla JavaScript |
-| 🔄 DOM & AJAX       | jQuery             |
-| 📦 Configuration    | JSON               |
-| 🖥️ Backend         | Node.js + Express  |
-| 🗄️ Database        | MongoDB            |
-| 🔷 ORM              | Prisma             |
-| 🐳 Local Database   | Docker Compose     |
+| 🔄 DOM & AJAX        | jQuery             |
+| 📦 Configuration     | JSON               |
+| 🖥️ Backend           | Node.js + Express  |
+| 🗄️ Database          | MongoDB            |
+| 🔷 ORM               | Prisma             |
+| 🐳 Local Database    | Docker Compose     |
 
 ---
 
@@ -62,12 +62,12 @@ EventHub
 
 ### 🚀 Applications
 
-| Application                  | Location                 |   Port |
-| ---------------------------- | ------------------------ | -----: |
-| 🌐 Public EventHub Site      | `frontend/public-client` | `5173` |
-| 🛡️ Admin Operations Console | `frontend/admin-client`  | `5174` |
-| ⚙️ Express API               | `server`                 | `5000` |
-| 🍃 MongoDB                 | `compose.yaml`           | `27017` |
+| Application                 | Location                 |    Port |
+| --------------------------- | ------------------------ | ------: |
+| 🌐 Public EventHub Site     | `frontend/public-client` |  `5173` |
+| 🛡️ Admin Operations Console | `frontend/admin-client`  |  `5174` |
+| ⚙️ Express API              | `server`                 |  `5000` |
+| 🍃 MongoDB                  | `compose.yaml`           | `27017` |
 
 ---
 
@@ -206,11 +206,11 @@ EventHub is designed without fake application data.
 
 The project includes:
 
-* ❌ No sample users
-* ❌ No sample events
-* ❌ No hard-coded credentials
-* ❌ No fake analytics
-* ❌ No mock API responses
+- ❌ No sample users
+- ❌ No sample events
+- ❌ No hard-coded credentials
+- ❌ No fake analytics
+- ❌ No mock API responses
 
 All application data is intended to originate from the configured MongoDB database and API layer.
 

@@ -81,9 +81,9 @@ The Jenkins webhook needs an online Jenkins server. `tools/Keep-JenkinsWebhookOn
 
 | Question                                | Short answer                                                                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Why Prisma?                             | It gives a typed database client and a single schema definition that is validated in CI, so the MongoDB collections and the API stay in sync.                                             |
+| Why Prisma?                             | It gives a typed database client and a single schema definition that is validated in CI, so the MongoDB collections and the API stay in sync.        |
 | Why use a transaction for registration? | Event capacity, registration creation and ticket creation must not partially succeed or race with another request.                                   |
-| Why does registration retry on MongoDB?   | MongoDB aborts a transaction that collides on a shared document, so `withTransaction` retries with backoff instead of failing the request.               |
+| Why does registration retry on MongoDB? | MongoDB aborts a transaction that collides on a shared document, so `withTransaction` retries with backoff instead of failing the request.           |
 | Why store a ticket hash?                | If the database is exposed, an attacker should not receive usable ticket tokens.                                                                     |
 | Why two frontends?                      | Student actions and administrator operations have different permissions and workflows.                                                               |
 | What happens if Jenkins is stopped?     | GitHub cannot wake an offline local computer. The sign-in supervisor keeps Jenkins/tunnel online after login, and Jenkins also polls as a fallback.  |
