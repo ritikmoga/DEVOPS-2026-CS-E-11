@@ -1,38 +1,55 @@
 server {
-  listen 80;
-  server_name _;
-  root /usr/share/nginx/html;
-  index index.html;
+    listen 80;
+    server_name _;
 
-  server_tokens off;
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    root /usr/share/nginx/html;
+    index index.html;
+    server_tokens off;
 
-  # Backend API and health check. API_UPSTREAM is set in the Dockerfile
-  # and can be overridden at `docker run` time.
-  location /api/ {
-    proxy_pass http://${API_UPSTREAM};
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 20m;
-  }
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-  location = /health {
-    proxy_pass http://${API_UPSTREAM}/health;
-  }
+    # Backend API proxy
+    location /api/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
 
-  # Hashed build assets can be cached aggressively.
-  location /assets/ {
-    try_files $uri =404;
-    expires 1y;
-    add_header Cache-Control "public, max-age=31536000, immutable";
-  }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
 
-  # SPA fallback so deep links such as /events/some-slug work on refresh.
-  location / {
-    try_files $uri $uri/ /index.html;
-    add_header Cache-Control "no-cache";
-  }
+        client_max_body_size 20m;
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Backend health check
+    location = /health {
+        proxy_pass http://${API_UPSTREAM}/health;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        access_log off;
+    }
+
+    # Immutable, hashed static assets
+    location /assets/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Block access to hidden files, except .well-known
+    location ~ /\.(?!well-known(?:/|$)) {
+        deny all;
+    }
+
+    # Single-page application routing
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
 }
